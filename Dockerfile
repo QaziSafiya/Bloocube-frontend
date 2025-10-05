@@ -10,11 +10,31 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
 # Build Next.js app
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+# DEBUG: Print the value during build
+RUN echo "========================================="
+RUN echo "🔍 Build-time NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
+RUN echo "========================================="
+
+# Fail build if NEXT_PUBLIC_API_URL is not set
+RUN if [ -z "$NEXT_PUBLIC_API_URL" ]; then \
+      echo "❌ ERROR: NEXT_PUBLIC_API_URL is empty or not set!"; \
+      echo "Please check your cloudbuild.yaml substitutions."; \
+      exit 1; \
+    fi
+
 RUN npm run build
+
+# DEBUG: Verify the API URL is embedded in the build
+RUN echo "========================================="
+RUN echo "🔍 Checking if API URL is embedded in build..."
+RUN grep -r "api-backend.bloocube.com" .next/static/ | head -n 3 || echo "⚠️  WARNING: API URL not found in static files"
+RUN echo "========================================="
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
