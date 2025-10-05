@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Button from "@/Components/ui/Button";
 import Link from "next/link";
+import { apiRequest } from "@/lib/apiClient";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
+// Use centralized API client to avoid bad base URL concatenation
 
 const SignupPage: React.FC = () => {
   const router = useRouter();
@@ -38,18 +39,14 @@ const SignupPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Signup failed");
-        return;
-      }
+      const data = await apiRequest<{ success: boolean; data: any; message?: string }>(
+        '/api/auth/register',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role })
+        }
+      );
 
       console.log("✅ Signup successful:", data);
 

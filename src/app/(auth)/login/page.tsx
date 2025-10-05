@@ -2,11 +2,12 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Button from "@/Components/ui/Button";
+import { apiRequest } from "@/lib/apiClient";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 // import { config } from "@/lib/config"; // Unused import
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
+// Use centralized API client to avoid bad base URL concatenation
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -30,18 +31,14 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Login failed");
-        return;
-      }
+      const data = await apiRequest<{ success: boolean; data: any; message?: string }>(
+        '/api/auth/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
 
       // Store tokens for authenticated API calls and refresh flow
       localStorage.setItem("token", data.data.tokens.accessToken);
