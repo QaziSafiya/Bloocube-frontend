@@ -11,7 +11,8 @@ export const config = {
 };
 
 export const getApiBase = (): string => {
-  const base = process.env.NEXT_PUBLIC_API_URL;
+  const runtime = (globalThis as any)?.NEXT_PUBLIC_API_URL as string | undefined;
+  const base = runtime || process.env.NEXT_PUBLIC_API_URL;
   if (!base) {
     throw new Error('NEXT_PUBLIC_API_URL is not set. Configure it in your deployment env or .env.local');
   }
