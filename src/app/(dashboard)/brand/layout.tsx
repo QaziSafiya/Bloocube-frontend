@@ -1,14 +1,16 @@
 "use client";
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Bell, Briefcase, Home, Settings, Users, Store, BarChart3, User, LogOut, Search, Menu, X } from 'lucide-react';
-import React, { useState, useEffect, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Briefcase, Home, Settings, Users, Store, BarChart3, User, LogOut, Search, Menu } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 export default function BrandLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState(3); // Mock notification count
+  const [notifications] = useState(3); // Mock notification count
+  const [isAuthed, setIsAuthed] = useState<boolean>(false);
   
   const nav = [
     { name: 'Overview', href: '/brand', icon: Home, color: 'blue' },
@@ -24,6 +26,27 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+  // Require auth for brand routes
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    let isBrand = false;
+    try { isBrand = !!userStr && JSON.parse(userStr)?.role === 'brand'; } catch {}
+    if (!token || !isBrand) {
+      router.replace('/login');
+    } else {
+      setIsAuthed(true);
+    }
+  }, [router]);
+
+  const onLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+    }
+    router.replace('/login');
+  };
 
   // Handle escape key
   useEffect(() => {
@@ -35,6 +58,10 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [sidebarOpen]);
+
+  if (!isAuthed) {
+    return null;
+  }
 
   const getNavItemClasses = (item: typeof nav[0], isActive: boolean) => {
     const baseClasses = "group relative flex items-center px-4 py-3.5 text-sm font-semibold rounded-2xl transition-all duration-500 ease-out transform hover:scale-[1.02] hover:shadow-lg";
@@ -118,7 +145,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
                 <p className="text-sm font-bold text-gray-900 truncate">Brand Account</p>
                 <p className="text-xs text-gray-500 truncate font-medium">brand@bloocube.com</p>
               </div>
-              <button className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-300 hover:scale-110 group">
+              <button onClick={onLogout} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-300 hover:scale-110 group">
                 <LogOut className="w-5 h-5" />
               </button>
             </div>

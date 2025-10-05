@@ -43,8 +43,11 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      // Assuming backend returns { token, user }
+      // Store tokens for authenticated API calls and refresh flow
       localStorage.setItem("token", data.data.tokens.accessToken);
+      if (data.data.tokens.refreshToken) {
+        localStorage.setItem("refreshToken", data.data.tokens.refreshToken);
+      }
       localStorage.setItem("user", JSON.stringify(data.data.user));
       
       // Clear auth cache to ensure fresh token is used
