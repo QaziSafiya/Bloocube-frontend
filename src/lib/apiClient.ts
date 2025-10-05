@@ -1,4 +1,5 @@
 import { measureApiCall } from '@/lib/performance';
+import { loadingManager } from '@/lib/loading';
 
 type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number };
 
@@ -114,6 +115,7 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
 
   // Create request promise with performance monitoring
   const requestPromise = (async (): Promise<T> => {
+    loadingManager.start();
     return measureApiCall(async (): Promise<T> => {
     try {
       const res = await fetch(`${base}${path}`, {
@@ -155,7 +157,7 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
       }
 
       if (!res.ok) {
-        let body: any = null;
+        let body: unknown = null;
         try {
           body = await res.json();
         } catch (e) {
@@ -163,24 +165,25 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
           body = { message: `HTTP ${res.status} ${res.statusText}` };
         }
         
-        const baseMessage = (body?.error || body?.message);
+        const parsed = body as { error?: string; message?: string; code?: string | number; details?: unknown; validation_errors?: unknown; errors?: unknown; validation?: unknown } | null;
+        const baseMessage = (parsed?.error || parsed?.message);
         const message = res.status === 403 ? (baseMessage || 'Permission denied') : (baseMessage || `HTTP ${res.status}`);
         
         console.log(`❌ API Error: ${res.status} ${res.statusText}`, {
           path,
           message,
-          code: body?.code,
-          details: body?.details,
-          validationErrors: body?.validation_errors || body?.errors || body?.validation,
-          fullResponse: body,
+          code: parsed?.code,
+          details: parsed?.details,
+          validationErrors: parsed?.validation_errors || parsed?.errors || parsed?.validation,
+          fullResponse: parsed,
           responseText: await res.text().catch(() => 'Could not read response text')
         });
         
         // For validation errors, include more details
-        if (res.status === 400 && body?.validation_errors) {
-          throw new Error(`Validation failed: ${JSON.stringify(body.validation_errors)}`);
-        } else if (res.status === 400 && body?.errors) {
-          throw new Error(`Validation failed: ${JSON.stringify(body.errors)}`);
+        if (res.status === 400 && parsed?.validation_errors) {
+          throw new Error(`Validation failed: ${JSON.stringify(parsed.validation_errors)}`);
+        } else if (res.status === 400 && parsed?.errors) {
+          throw new Error(`Validation failed: ${JSON.stringify(parsed.errors)}`);
         }
         
         throw new Error(message);
@@ -203,6 +206,7 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
     } finally {
       // Remove from pending requests
       pendingRequests.delete(cacheKey);
+      loadingManager.done();
     }
     }, path);
   })();

@@ -1,6 +1,10 @@
 // lib/api.ts
-export const apiFetch = (path: string, options: RequestInit = {}) =>
-  fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+import { loadingManager } from '@/lib/loading';
+
+export const apiFetch = async (path: string, options: RequestInit = {}) => {
+  loadingManager.start();
+  try {
+    return await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(typeof window !== 'undefined' && localStorage.getItem('token')
@@ -9,7 +13,11 @@ export const apiFetch = (path: string, options: RequestInit = {}) =>
     },
     ...options,
     credentials: 'include'
-  });
+    });
+  } finally {
+    loadingManager.done();
+  }
+}
 
 export const apiJson = async <T = unknown>(path: string, options: RequestInit = {}): Promise<T> => {
   const res = await apiFetch(path, options);
