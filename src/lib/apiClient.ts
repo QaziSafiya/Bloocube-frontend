@@ -1,5 +1,6 @@
 import { measureApiCall } from '@/lib/performance';
 import { loadingManager } from '@/lib/loading';
+import { getApiBase } from '@/lib/config';
 
 type TokenPair = { accessToken: string; refreshToken: string; expiresIn: number };
 
@@ -30,7 +31,7 @@ async function refreshAppToken(): Promise<string | null> {
     const stored = localStorage.getItem('refreshToken');
     if (!stored) return null;
 
-    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const base = getApiBase();
     const res = await fetch(`${base}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -79,7 +80,7 @@ function getCacheTTL(path: string): number {
 }
 
 export async function apiRequest<T = unknown>(path: string, init: RequestInit = {}, retries = 1): Promise<T> {
-  const base = process.env.NEXT_PUBLIC_API_URL || '';
+  const base = getApiBase();
   const method = init.method || 'GET';
   const cacheKey = getCacheKey(path, init);
   

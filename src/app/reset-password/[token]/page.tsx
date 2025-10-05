@@ -34,7 +34,8 @@ export default function ResetPasswordTokenPage({ params }: { params: Promise<{ t
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/reset-password/${token}`, {
+      const base = process.env.NEXT_PUBLIC_API_URL as string;
+      const res = await fetch(`${base}/api/auth/reset-password/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPassword: password }),

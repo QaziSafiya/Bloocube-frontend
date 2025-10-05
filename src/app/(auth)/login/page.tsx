@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 // import { config } from "@/lib/config"; // Unused import
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL; // ✅ from env
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");

@@ -1,10 +1,12 @@
 // lib/api.ts
 import { loadingManager } from '@/lib/loading';
+import { getApiBase } from '@/lib/config';
 
 export const apiFetch = async (path: string, options: RequestInit = {}) => {
   loadingManager.start();
   try {
-    return await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+    const base = getApiBase();
+    return await fetch(`${base}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(typeof window !== 'undefined' && localStorage.getItem('token')

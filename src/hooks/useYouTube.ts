@@ -125,7 +125,8 @@ export const useYouTube = () => {
       // Test authentication first
       try {
         console.log('🧪 Testing authentication before YouTube connect...');
-        const testResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/health/redis`, {
+        const base = process.env.NEXT_PUBLIC_API_URL as string;
+        const testResponse = await fetch(`${base}/api/health/redis`, {
           headers: {
             'Authorization': `Bearer ${tokenToUse}`,
             'Content-Type': 'application/json'
