@@ -1,0 +1,47 @@
+substitutions:
+  _REGION: asia-southeast1
+  _SERVICE: bloocube-frontend
+  _REPO: bloocube
+  _IMAGE_TAG: latest
+  _NEXT_PUBLIC_API_URL: https://api-backend.bloocube.com
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # Build container image and bake NEXT_PUBLIC_API_URL at build time
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-f'
+      - 'Bloocube-frontend/Dockerfile'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
+      - 'Bloocube-frontend'
+
+  # Push image to Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '$_SERVICE'
+      - '--image=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      # Also set the env at runtime for any server components (client bundle is baked at build)
+      - '--set-env-vars=NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+
+
