@@ -21,12 +21,17 @@ class LoadingManager {
   }
 
   start() {
-    // Avoid flicker by debouncing start slightly
+    // Avoid flicker by debouncing start slightly; but if already active, increment immediately
+    if (this.activeCount > 0) {
+      this.activeCount += 1;
+      this.notify();
+      return;
+    }
     if (this.debounceTimer) clearTimeout(this.debounceTimer as unknown as number);
     this.debounceTimer = setTimeout(() => {
       this.activeCount += 1;
       this.notify();
-    }, 80);
+    }, 60);
   }
 
   done() {

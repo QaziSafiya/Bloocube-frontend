@@ -9,8 +9,10 @@ export default function LandingLayout({
 }) {
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Ensure Navbar is above decorative layers */}
       <Navbar />
       <div className="relative z-10">
+        {/* Decorative layer must never block interactions */}
         <div className="pointer-events-none absolute md:fixed inset-0 z-0 overflow-hidden will-change-transform">
           {/* Premium diffuse gradient blobs (based on provided reference) */}
           <div className="absolute -top-20 -left-20 w-[400px] h-[400px] bg-gradient-to-br from-purple-600 via-blue-500 to-teal-400 opacity-20 md:opacity-30 rounded-full blur-[120px] animate-gradient-60" />

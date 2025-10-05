@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { PerformanceDebugger } from "@/Components/PerformanceDebugger";
-import TopProgressBar from "@/Components/ui/TopProgressBar";
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
-import { loadingManager } from "@/lib/loading";
+import RouteProgress from "@/Components/ui/RouteProgress";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Bloocube",
@@ -16,22 +14,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Detect route changes to show loader briefly between transitions
-  // Note: This hook is a no-op during SSR
-  const pathname = usePathname?.();
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!pathname) return;
-    // Start loading and auto-complete shortly after to reflect navigation
-    loadingManager.start();
-    const t = setTimeout(() => loadingManager.done(), 300);
-    return () => clearTimeout(t);
-  }, [pathname]);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <TopProgressBar />
+        <RouteProgress />
+        {/* Preload most-hit routes to improve perceived navigation speed */}
+        <div className="hidden">
+          <Link href="/login" prefetch />
+          <Link href="/signup" prefetch />
+          <Link href="/creator" prefetch />
+          <Link href="/brand" prefetch />
+        </div>
         {children}
         {process.env.NODE_ENV === 'development' && <PerformanceDebugger />}
       </body>
