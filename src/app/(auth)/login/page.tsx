@@ -74,17 +74,18 @@ const LoginPage: React.FC = () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!token) {
-        // allow starting Google without app auth; fall back to state with anonymous marker
         localStorage.setItem('token', 'guest');
       }
       const callbackUrl = `${window.location.origin}/auth/google/callback`;
-      const res = await fetch(`${API_BASE_URL}/api/google/auth-url`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || 'guest'}` },
-        body: JSON.stringify({ redirectUri: callbackUrl })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.authURL) {
+      const data = await apiRequest<{ success: boolean; authURL?: string; state?: string; message?: string; error?: string }>(
+        '/api/google/auth-url',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || 'guest'}` },
+          body: JSON.stringify({ redirectUri: callbackUrl })
+        }
+      );
+      if (!data.success || !data.authURL) {
         setError(data.message || data.error || 'Failed to start Google auth');
         return;
       }
