@@ -2,14 +2,10 @@
 import { useState } from 'react';
 import { 
   ChartBarIcon, 
-  TrendingUpIcon, 
-  EyeIcon,
-  HeartIcon,
-  CurrencyDollarIcon,
-  UsersIcon,
   ArrowUpIcon,
   ArrowDownIcon
 } from '@heroicons/react/24/outline';
+import { TrendingUp, Eye, Heart, CircleDollarSign as CurrencyDollarIcon, Users as UsersIcon } from 'lucide-react';
 
 export default function BrandAnalyticsPage() {
   const [timeRange, setTimeRange] = useState('30d');
@@ -44,7 +40,7 @@ export default function BrandAnalyticsPage() {
       value: '8',
       change: '+2',
       changeType: 'positive',
-      icon: TrendingUpIcon,
+      icon: TrendingUp,
       color: 'green'
     },
     {
@@ -52,7 +48,7 @@ export default function BrandAnalyticsPage() {
       value: '2.4M',
       change: '+18%',
       changeType: 'positive',
-      icon: EyeIcon,
+      icon: Eye,
       color: 'purple'
     },
     {
@@ -60,7 +56,7 @@ export default function BrandAnalyticsPage() {
       value: '156K',
       change: '+8%',
       changeType: 'positive',
-      icon: HeartIcon,
+      icon: Heart,
       color: 'pink'
     },
     {
@@ -201,7 +197,7 @@ export default function BrandAnalyticsPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Engagement Trends</h3>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
             <div className="text-center">
-              <TrendingUpIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-500">Chart coming soon</p>
             </div>
           </div>
@@ -305,7 +301,7 @@ export default function BrandAnalyticsPage() {
               <p className="text-sm text-green-600 mt-1">+8% from last month</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
-              <TrendingUpIcon className="w-6 h-6 text-blue-600" />
+              <TrendingUp className="w-6 h-6 text-blue-600" />
             </div>
           </div>
         </div>
@@ -328,7 +324,7 @@ export default function BrandAnalyticsPage() {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trends</h3>
         <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
           <div className="text-center">
-            <CurrencyDollarIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <CurrencyDollarIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">Revenue chart coming soon</p>
           </div>
         </div>

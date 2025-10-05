@@ -10,7 +10,6 @@ import {
   BarChart3, 
   Eye,
   TestTube,
-  Switch,
   Activity,
   DollarSign,
   Clock,
@@ -349,7 +348,7 @@ const AIProvidersManagement = () => {
                         {switchingProvider ? (
                           <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Switch className="w-4 h-4" />
+                          <Settings className="w-4 h-4" />
                         )}
                         <span>Set Primary</span>
                       </button>

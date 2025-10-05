@@ -252,7 +252,7 @@ export default function BrandBidsPage() {
                     <div>
                       <div className="text-sm text-gray-500">Submitted</div>
                       <div className="text-sm font-medium text-gray-900">
-                        {formatDate(bid.created_at || bid.updated_at || '')}
+                        {formatDate((bid as any).created_at || (bid as any).updated_at || (bid as any).createdAt || (bid as any).updatedAt || '')}
                       </div>
                     </div>
                   </div>
