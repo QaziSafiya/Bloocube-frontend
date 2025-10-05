@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { config } from "@/lib/config";
+import { getApiBase } from "@/lib/config";
 
 function GoogleCallbackContent() {
   const router = useRouter();
@@ -32,7 +32,8 @@ function GoogleCallbackContent() {
     }
 
     const redirectUri = `${window.location.origin}/auth/google/callback`;
-    window.location.href = `${config.apiUrl}/api/google/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
+    const base = getApiBase();
+    window.location.href = `${base}/api/google/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
   }, [searchParams, router]);
 
   return <p>Signing you in with Google...</p>;

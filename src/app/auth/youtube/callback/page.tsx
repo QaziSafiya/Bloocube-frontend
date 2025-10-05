@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { config } from "@/lib/config";
+import { getApiBase } from "@/lib/config";
 
 function YouTubeCallbackContent() {
   const router = useRouter();
@@ -35,7 +35,8 @@ function YouTubeCallbackContent() {
     }
 
     // Let backend handle callback via GET redirect (no auth header needed)
-    window.location.href = `${config.apiUrl}/api/youtube/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
+    const base = getApiBase();
+    window.location.href = `${base}/api/youtube/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
   }, [searchParams, router]);
 
   return <p>Connecting your YouTube account...</p>;

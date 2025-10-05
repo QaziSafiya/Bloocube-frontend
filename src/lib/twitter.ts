@@ -1,5 +1,5 @@
 // src/lib/twitter.ts FRONTEND 
-import { config } from './config';
+import { getApiBase } from './config';
 import { apiRequest } from './apiClient';
 
 export interface TwitterUser {
@@ -57,7 +57,7 @@ class TwitterService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = config.apiUrl;
+    this.baseURL = getApiBase();
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

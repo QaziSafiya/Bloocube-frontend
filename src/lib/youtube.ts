@@ -1,5 +1,5 @@
 // src/lib/youtube.ts
-import { config } from './config';
+import { getApiBase } from './config';
 import { apiRequest } from './apiClient';
 
 export interface YouTubeChannel {
@@ -73,7 +73,7 @@ class YouTubeService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = config.apiUrl;
+    this.baseURL = getApiBase();
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

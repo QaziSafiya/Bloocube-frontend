@@ -2,7 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { config } from "@/lib/config";
+import { config, getApiBase } from "@/lib/config";
 
 function TwitterCallbackContent() {
   const router = useRouter();
@@ -39,7 +39,8 @@ function TwitterCallbackContent() {
     }
 
     // Let backend handle callback via GET redirect (no auth header needed)
-    window.location.href = `${config.apiUrl}/api/twitter/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
+    const base = getApiBase();
+    window.location.href = `${base}/api/twitter/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
   }, [searchParams, router]);
 
   return <p>Connecting your Twitter account...</p>;
