@@ -12,8 +12,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Build Next.js app
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL=https://api-backend.bloocube.com
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+RUN echo "Building with NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
 RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
