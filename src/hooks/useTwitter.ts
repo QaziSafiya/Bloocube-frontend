@@ -76,7 +76,10 @@ export const useTwitter = () => {
         throw new Error('Please log in to connect Twitter');
       }
 
-      const callbackUrl = redirectUri || config.twitter.callbackUrl;
+      const callbackUrl = (redirectUri && redirectUri.trim()) ? redirectUri : config.twitter.callbackUrl;
+      if (!callbackUrl) {
+        throw new Error('Missing Twitter callback URL');
+      }
       const response = await twitterService.generateAuthURL(callbackUrl);
       
       // When user clicks "Connect Twitter"
