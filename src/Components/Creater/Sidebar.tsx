@@ -20,6 +20,7 @@ const sidebarItems = [
   { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
   { name: 'Marketplace', icon: Store, href: '/creator/marketplace' },
   { name: 'Competitors', icon: Users, href: '/creator/competitors' },
+  { name: 'My Profile', icon: User, href: '/creator/profile' },
   { name: 'Settings', icon: Settings, href: '/creator/settings' },
 ];
 

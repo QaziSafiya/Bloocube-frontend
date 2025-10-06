@@ -116,7 +116,7 @@ export default function BrandDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -168,8 +168,8 @@ export default function BrandDashboard() {
 
       {/* Recent Campaigns */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h2 className="text-lg font-semibold text-gray-900">Recent Campaigns</h2>
             <Link 
               href="/brand/campaigns"
@@ -180,7 +180,7 @@ export default function BrandDashboard() {
           </div>
         </div>
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {campaignsLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -188,7 +188,7 @@ export default function BrandDashboard() {
           ) : campaigns && campaigns.length > 0 ? (
             <div className="space-y-4">
               {campaigns.slice(0, 5).map(campaign => (
-                <div key={campaign._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div key={campaign._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 rounded-lg">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{campaign.title}</h3>
                     <p className="text-sm text-gray-500 mt-1">{campaign.description}</p>
@@ -201,7 +201,7 @@ export default function BrandDashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
                       {getStatusIcon(campaign.status)}
                       {campaign.status}

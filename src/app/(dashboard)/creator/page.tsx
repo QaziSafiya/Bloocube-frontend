@@ -166,7 +166,7 @@ const Dashboard = () => {
       )}
       
       {!loading && !error && (
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <Calendar className="w-4 h-4" />
             <span>Last updated: {new Date(totals.lastUpdated).toLocaleTimeString()}</span>
@@ -354,30 +354,30 @@ const Dashboard = () => {
             <Zap className="w-5 h-5 text-white" />
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-4 px-4 font-semibold text-gray-700">Content</th>
-                <th className="text-left py-4 px-4 font-semibold text-gray-700">Platform</th>
-                <th className="text-left py-4 px-4 font-semibold text-gray-700">Engagement</th>
-                <th className="text-left py-4 px-4 font-semibold text-gray-700">Actions</th>
+              <tr className="border-b border-gray-200 text-xs sm:text-sm">
+                <th className="text-left py-3 sm:py-4 px-2 sm:px-4 font-semibold text-gray-700">Content</th>
+                <th className="text-left py-3 sm:py-4 px-2 sm:px-4 font-semibold text-gray-700">Platform</th>
+                <th className="text-left py-3 sm:py-4 px-2 sm:px-4 font-semibold text-gray-700">Engagement</th>
+                <th className="text-left py-3 sm:py-4 px-2 sm:px-4 font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody>
               {topPosts.map((post) => (
                 <tr key={post.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-2xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-xl sm:text-2xl">
                         {post.thumbnail}
                       </div>
-                      <div className="max-w-md">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-2">{post.content}</p>
+                      <div className="max-w-[12rem] sm:max-w-md">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-2">{post.content}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
                     <span 
                       className="px-3 py-1.5 rounded-full text-xs font-semibold text-white shadow-sm"
                       style={{ backgroundColor: post.platformColor }}
@@ -385,14 +385,14 @@ const Dashboard = () => {
                       {post.platform}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <div className="flex items-center space-x-2 text-sm sm:text-base">
                       <span className="font-bold text-gray-900">{post.engagement}</span>
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                  <td className="py-3 sm:py-4 px-2 sm:px-4">
+                    <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
                       <Eye className="w-4 h-4" />
                       <span>View Details</span>
                     </button>

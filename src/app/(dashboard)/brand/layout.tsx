@@ -11,6 +11,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications] = useState(3); // Mock notification count
   const [isAuthed, setIsAuthed] = useState<boolean>(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   
   const nav = [
     { name: 'Overview', href: '/brand', icon: Home, color: 'blue' },
@@ -19,6 +20,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
     { name: 'Bids', href: '/brand/bids', icon: Users, color: 'orange' },
     { name: 'Analytics', href: '/brand/analytics', icon: BarChart3, color: 'indigo' },
     { name: 'Notifications', href: '/brand/notifications', icon: Bell, color: 'red' },
+    { name: 'My Profile', href: '/brand/profile', icon: User, color: 'cyan' },
     { name: 'Settings', href: '/brand/settings', icon: Settings, color: 'gray' }
   ];
 
@@ -167,7 +169,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
             <div className="relative z-10 px-8 py-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 relative">
                   <button 
                     className="lg:hidden p-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 rounded-2xl transition-all duration-300 hover:scale-105"
                     onClick={() => setSidebarOpen(true)}
@@ -202,6 +204,18 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
                       </span>
                     )}
                   </Link>
+                  <div className="relative">
+                    <button className="p-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 rounded-2xl transition-all duration-300 hover:scale-105" onClick={() => setMenuOpen(v => !v)}>
+                      <User className="w-6 h-6" />
+                    </button>
+                    {menuOpen && (
+                      <div className="absolute right-0 top-12 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
+                        <Link href="/brand/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Profile</Link>
+                        <Link href="/brand/bids" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Bids</Link>
+                        <button onClick={onLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Logout</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
