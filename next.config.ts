@@ -1,6 +1,26 @@
 import type { NextConfig } from "next";
 
+// Validate critical environment variables at build time
+const requiredEnvVars = ['NEXT_PUBLIC_API_URL'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.warn('⚠️  Warning: Missing required environment variables:');
+  missingEnvVars.forEach(varName => {
+    console.warn(`   - ${varName}`);
+  });
+  console.warn('   The application may not work correctly in production.');
+}
+
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker/Cloud Run
+  output: 'standalone',
+
+  // Explicitly expose public environment variables
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
+  },
+
   // Performance optimizations
   experimental: {
     // optimizeCss: true, // Disabled due to critters dependency issue
@@ -36,7 +56,7 @@ const nextConfig: NextConfig = {
   // Compression
   compress: true,
 
-  // Headers for caching
+  // Headers for caching and security
   async headers() {
     return [
       {
