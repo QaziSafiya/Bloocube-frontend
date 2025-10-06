@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Button from "@/Components/ui/Button";
@@ -8,7 +8,7 @@ import { apiRequest } from "@/lib/apiClient";
 
 // Use centralized API client to avoid bad base URL concatenation
 
-const SignupPage: React.FC = () => {
+const SignupForm: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -206,6 +206,27 @@ const SignupPage: React.FC = () => {
           </div>
         </div>
     </section>
+  );
+};
+
+const SignupPage: React.FC = () => {
+  return (
+    <Suspense fallback={
+      <section className="min-h-screen flex items-center justify-center px-8 lg:px-16 xl:px-24">
+        <div className="w-full max-w-7xl flex">
+          <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center pl-8 xl:pl-16">
+            <div className="w-full max-w-md bg-black/80 backdrop-blur-xl rounded-3xl p-8 text-white border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                <p className="text-zinc-400">Loading...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 };
 
