@@ -593,11 +593,23 @@ export default function BrandCampaignsPage() {
               )}
               
               {!bidsLoading && !bidsError && bids.length > 0 && (
-                <div className="space-y-4">
+                    <div className="space-y-4">
                   {bids.map(b => (
                     <div key={b._id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
+                          {/* Creator identity */}
+                          <div className="mb-2 text-sm text-gray-500">
+                            {(() => {
+                              const creator = (b as any).creator_id as any;
+                              const name = creator && typeof creator === 'object' ? (creator.name || creator.email || '') : '';
+                              const handle = creator?.socialAccounts?.instagram?.username || creator?.socialAccounts?.twitter?.username || '';
+                              if (name && handle) return `${name} • @${handle}`;
+                              if (name) return String(name);
+                              if (handle) return `@${handle}`;
+                              return 'Creator';
+                            })()}
+                          </div>
                           <div className="flex items-center gap-3 mb-3">
                             <div className="text-2xl font-bold text-gray-900">
                               ₹{b.bid_amount.toLocaleString()}

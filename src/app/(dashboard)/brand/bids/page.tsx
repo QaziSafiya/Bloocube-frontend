@@ -267,9 +267,15 @@ export default function BrandBidsPage() {
                         : 'Campaign'}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      by {typeof bid.creator_id === 'object' && (bid.creator_id as any)?.name
-                        ? (bid.creator_id as any).name
-                        : 'Creator'}
+                      {(() => {
+                        const creator = (bid.creator_id as any);
+                        const name = creator && typeof creator === 'object' ? (creator.name || creator.email || '') : '';
+                        const handle = creator?.socialAccounts?.instagram?.username || creator?.socialAccounts?.twitter?.username || '';
+                        if (name && handle) return `by ${name} • @${handle}`;
+                        if (name) return `by ${name}`;
+                        if (handle) return `@${handle}`;
+                        return 'by Creator';
+                      })()}
                     </p>
                   </div>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(bid.status)}`}>
