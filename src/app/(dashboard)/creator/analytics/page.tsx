@@ -1,6 +1,6 @@
 // pages/analytics.tsx
 'use client'
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Line, Pie, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -16,6 +16,8 @@ import {
 } from 'chart.js';
 import { Menu } from 'lucide-react';
 import CreatorLayout from '@/Components/Creater/CreatorLayout';
+import { apiRequest } from '@/lib/apiClient';
+import { authUtils } from '@/lib/auth';
 
 ChartJS.register(
   CategoryScale,
@@ -52,61 +54,159 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, color, 
   </div>
 );
 
+type AnalyticsItem = {
+  post_id?: string;
+  platform?: string;
+  timing?: { posted_at?: string };
+  metrics?: { likes?: number; comments?: number; shares?: number; views?: number };
+  content?: { media_type?: string; caption?: string; title?: string };
+};
+
 const AnalyticsDashboard: React.FC = () => {
-  // Sample data for charts
-  const engagementData = {
-    labels: [
-      'Jan 02', 'Jan 06', 'Jan 07', 'Jan 09', 'Jan 11', 'Jan 15', 'Jan 17',
-      'Jan 19', 'Jan 21', 'Jan 23', 'Jan 25', 'Jan 27', 'Jan 30'
-    ],
-    datasets: [
-      {
-        label: 'Likes',
-        data: [180, 190, 185, 200, 210, 195, 205, 220, 230, 240, 235, 250, 260],
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-      {
-        label: 'Comments',
-        data: [45, 50, 48, 52, 55, 50, 58, 60, 62, 65, 63, 68, 70],
-        borderColor: '#10B981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      }
-    ]
+  const [analytics, setAnalytics] = useState<AnalyticsItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [rangeDays, setRangeDays] = useState<7 | 30 | 90>(30);
+
+  const fetchAnalytics = async () => {
+    try {
+      setError(null);
+      const user = authUtils.getUser() as { id?: string } | null;
+      const userId = user?.id || (authUtils as unknown as { getUserId?: () => string }).getUserId?.();
+      if (!userId) throw new Error('Not authenticated');
+      const res = await apiRequest<{ success: boolean; data: { analytics: AnalyticsItem[] } }>(`/api/analytics/user/${userId}`);
+      setAnalytics(res?.data?.analytics || []);
+    } catch (e) {
+      setError((e as Error).message || 'Failed to load analytics');
+      setAnalytics([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const platformData = {
-    labels: ['Instagram', 'Facebook', 'TikTok', 'Twitter'],
-    datasets: [
-      {
-        data: [45, 27, 16, 12],
-        backgroundColor: [
-          '#3B82F6', // Blue
-          '#10B981', // Green  
-          '#EF4444', // Red
-          '#F59E0B', // Yellow
-        ],
-        borderWidth: 0,
-      }
-    ]
-  };
+  useEffect(() => {
+    fetchAnalytics();
+    const interval = setInterval(fetchAnalytics, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const postTypeData = {
-    labels: ['Image', 'Video', 'Carousel', 'Story'],
-    datasets: [
-      {
-        data: [520, 680, 540, 420],
-        backgroundColor: '#3B82F6',
-        borderRadius: 4,
-      }
-    ]
-  };
+  // Build day labels for selected range
+  const dayLabels = useMemo(() => {
+    const labels: string[] = [];
+    const now = new Date();
+    for (let i = rangeDays - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+    }
+    return labels;
+  }, [rangeDays]);
+
+  const engagementData = useMemo(() => {
+    const byDay: Record<string, { likes: number; comments: number; shares: number }> = {};
+    dayLabels.forEach(l => (byDay[l] = { likes: 0, comments: 0, shares: 0 }));
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (rangeDays - 1));
+    analytics.forEach(a => {
+      const date = a?.timing?.posted_at ? new Date(a.timing.posted_at) : null;
+      if (!date || date < cutoff) return;
+      const key = `${date.getMonth() + 1}/${date.getDate()}`;
+      if (!byDay[key]) return;
+      byDay[key].likes += a.metrics?.likes || 0;
+      byDay[key].comments += a.metrics?.comments || 0;
+      byDay[key].shares += a.metrics?.shares || 0;
+    });
+    return {
+      labels: dayLabels,
+      datasets: [
+        {
+          label: 'Likes',
+          data: dayLabels.map(l => byDay[l]?.likes || 0),
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Comments',
+          data: dayLabels.map(l => byDay[l]?.comments || 0),
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Shares',
+          data: dayLabels.map(l => byDay[l]?.shares || 0),
+          borderColor: '#EF4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }
+      ]
+    };
+  }, [analytics, dayLabels, rangeDays]);
+
+  const platformData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    analytics.forEach(a => {
+      const p = String(a.platform || '').toLowerCase();
+      counts[p] = (counts[p] || 0) + 1;
+    });
+    const labels = Object.keys(counts).map(n => n.charAt(0).toUpperCase() + n.slice(1));
+    const data = Object.values(counts);
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: ['#E1306C','#1877F2','#1DA1F2','#0077B5','#FF0000','#3B82F6','#10B981','#F59E0B'],
+          borderWidth: 0
+        }
+      ]
+    };
+  }, [analytics]);
+
+  const postTypeData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    analytics.forEach(a => {
+      const t = String(a.content?.media_type || 'unknown');
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    const labels = Object.keys(counts).map(n => n.charAt(0).toUpperCase() + n.slice(1));
+    const data = Object.values(counts);
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: '#3B82F6',
+          borderRadius: 4
+        }
+      ]
+    };
+  }, [analytics]);
+
+  const totals = useMemo(() => {
+    const sum = (key: 'likes' | 'comments' | 'shares' | 'views') => analytics.reduce((s, a) => s + (a.metrics?.[key] || 0), 0);
+    const totalEngagements = sum('likes') + sum('comments') + sum('shares');
+    const avgEngRate = analytics.length ? (((totalEngagements) / Math.max(sum('views'), 1)) * 100).toFixed(1) : '0.0';
+    const topPost = [...analytics]
+      .map(a => ({
+        engagement: (a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.shares || 0),
+        title: a.content?.caption || a.content?.title || a.post_id || 'Post'
+      }))
+      .sort((a, b) => b.engagement - a.engagement)[0];
+    return {
+      totalEngagements,
+      audienceGrowth: sum('views'),
+      topPostTitle: topPost?.title || '—',
+      avgEngagementRate: avgEngRate
+    };
+  }, [analytics]);
 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -192,38 +292,49 @@ const chartOptions: import("chart.js").ChartOptions<"line"> = {
       <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border">
         <h3 className="text-sm font-medium mb-2">Data Range Selection</h3>
         <p className="text-xs text-gray-500 mb-3">Select the period for your analytics data</p>
-        <button className="px-4 py-2 bg-gray-100 text-sm rounded-md border">
-          📅 Last 30 Days
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRangeDays(7)}
+            className={`px-3 py-1.5 text-sm rounded-md border ${rangeDays === 7 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50'}`}
+          >7d</button>
+          <button
+            onClick={() => setRangeDays(30)}
+            className={`px-3 py-1.5 text-sm rounded-md border ${rangeDays === 30 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50'}`}
+          >30d</button>
+          <button
+            onClick={() => setRangeDays(90)}
+            className={`px-3 py-1.5 text-sm rounded-md border ${rangeDays === 90 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50'}`}
+          >90d</button>
+        </div>
       </div>
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
         <MetricCard
           title="Total Engagements"
-          value="9,450"
-          subtitle="+15% from last month"
+          value={totals.totalEngagements.toLocaleString()}
+          subtitle="Live from your posts"
           color="bg-green-100"
           icon={<span className="text-green-600">💬</span>}
         />
         <MetricCard
           title="Audience Growth"
-          value="8,120"
-          subtitle="+8% from last month"
+          value={totals.audienceGrowth.toLocaleString()}
+          subtitle="Total views (last 30 days)"
           color="bg-blue-100"
           icon={<span className="text-blue-600">👥</span>}
         />
         <MetricCard
           title="Top Performing Post"
-          value='"New Feature Launch"'
-          subtitle="2.5K Likes, 840 Comments"
+          value={`"${totals.topPostTitle}"`}
+          subtitle="Based on total engagement"
           color="bg-yellow-100"
           icon={<span className="text-yellow-600">⭐</span>}
         />
         <MetricCard
           title="Avg. Engagement Rate"
-          value="4.2%"
-          subtitle="+0.3% from last month"
+          value={`${totals.avgEngagementRate}%`}
+          subtitle="Engagement vs views"
           color="bg-purple-100"
           icon={<span className="text-purple-600">📊</span>}
         />
@@ -235,7 +346,7 @@ const chartOptions: import("chart.js").ChartOptions<"line"> = {
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
           <div className="mb-4">
             <h3 className="text-lg font-semibold">Engagement Trends</h3>
-            <p className="text-sm text-gray-500">Likes and comments over the last 30 days</p>
+            <p className="text-sm text-gray-500">Likes, comments and shares over the last {rangeDays} days</p>
           </div>
           <div style={{ height: "250px" }} className="w-full">
             <Line data={engagementData} options={chartOptions} />

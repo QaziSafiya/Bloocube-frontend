@@ -21,18 +21,27 @@ import {
   Zap,
   ArrowUpRight,
   ArrowDownRight,
-  RefreshCw,
-  Activity
+  RefreshCw
 } from 'lucide-react';
 import CreatorLayout from '@/Components/Creater/CreatorLayout';
 import { apiRequest } from '@/lib/apiClient';
 import { authUtils } from '@/lib/auth';
 
+type AnalyticsItem = {
+  post_id?: string;
+  platform?: string;
+  timing?: { posted_at?: string };
+  metrics?: { likes?: number; comments?: number; shares?: number; views?: number };
+  content?: { media_type?: string; caption?: string };
+};
+
 const Dashboard = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [analytics, setAnalytics] = useState<Array<Record<string, any>>>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsItem[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number>(0);
+  const [scheduledCount, setScheduledCount] = useState<number>(0);
+  const [totalPostsCount, setTotalPostsCount] = useState<number>(0);
 
   const fetchAnalytics = async () => {
     try {
@@ -40,7 +49,7 @@ const Dashboard = () => {
       const user = authUtils.getUser() as { id?: string } | null;
       const userId = user?.id || (authUtils as unknown as { getUserId?: () => string }).getUserId?.();
       if (!userId) throw new Error('Not authenticated');
-      const res = await apiRequest<{ success: boolean; data: { analytics: any[] } }>(`/api/analytics/user/${userId}`);
+      const res = await apiRequest<{ success: boolean; data: { analytics: AnalyticsItem[] } }>(`/api/analytics/user/${userId}`);
       setAnalytics(res?.data?.analytics || []);
       setLastUpdated(Date.now());
     } catch (e) {
@@ -51,9 +60,26 @@ const Dashboard = () => {
     }
   };
 
+  const fetchPostCounts = async () => {
+    try {
+      // Get total posts count with minimal payload
+      const totalRes = await apiRequest<{ success: boolean; pagination?: { total?: number } }>(`/api/posts?limit=1`);
+      const scheduledRes = await apiRequest<{ success: boolean; pagination?: { total?: number } }>(`/api/posts?status=scheduled&limit=1`);
+      setTotalPostsCount(totalRes?.pagination?.total || 0);
+      setScheduledCount(scheduledRes?.pagination?.total || 0);
+    } catch (e) {
+      // Non-fatal for dashboard; keep previous values
+      console.warn('Failed to load post counts', e);
+    }
+  };
+
   useEffect(() => {
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 30000);
+    fetchPostCounts();
+    const interval = setInterval(() => {
+      fetchAnalytics();
+      fetchPostCounts();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -89,9 +115,9 @@ const Dashboard = () => {
   const topPosts = useMemo(() => {
     return [...analytics]
       .map((a) => ({
-        id: a.post_id,
+        id: a.post_id || '',
         thumbnail: a.content?.media_type === 'video' ? '🎥' : '📸',
-        content: a.content?.caption || a.post_id,
+        content: a.content?.caption || a.post_id || '',
         platform: (a.platform || '').toString(),
         engagement: String((a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.shares || 0)),
         platformColor:
@@ -106,15 +132,15 @@ const Dashboard = () => {
   }, [analytics]);
 
   const totals = useMemo(() => {
-    const sum = (key: string) => analytics.reduce((s, a) => s + (a.metrics?.[key] || 0), 0);
+    const sum = (key: 'likes' | 'comments' | 'shares' | 'views') => analytics.reduce((s, a) => s + (a.metrics?.[key] || 0), 0);
     return {
-      totalPosts: analytics.length,
-      scheduledPosts: 0,
+      totalPosts: totalPostsCount,
+      scheduledPosts: scheduledCount,
       engagementRate: analytics.length ? (((sum('likes') + sum('comments') + sum('shares')) / Math.max(sum('views'), 1)) * 100).toFixed(1) : '0.0',
       avgEngagementScore: analytics.length ? Math.round((sum('likes') + sum('comments') * 2 + sum('shares') * 3) / analytics.length) : 0,
       lastUpdated
     };
-  }, [analytics, lastUpdated]);
+  }, [analytics, lastUpdated, totalPostsCount, scheduledCount]);
 
 
 

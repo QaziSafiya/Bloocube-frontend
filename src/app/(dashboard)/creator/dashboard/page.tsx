@@ -22,6 +22,8 @@ import { authUtils } from '@/lib/auth';
 
 const Dashboard = () => {
   const [analytics, setAnalytics] = useState<Array<Record<string, any>>>([]);
+  const [scheduledCount, setScheduledCount] = useState<number>(0);
+  const [totalPostsCount, setTotalPostsCount] = useState<number>(0);
 
   const fetchAnalytics = async () => {
     try {
@@ -36,9 +38,24 @@ const Dashboard = () => {
     }
   };
 
+  const fetchPostCounts = async () => {
+    try {
+      const totalRes = await apiRequest<{ success: boolean; pagination?: { total?: number } }>(`/api/posts?limit=1`);
+      const scheduledRes = await apiRequest<{ success: boolean; pagination?: { total?: number } }>(`/api/posts?status=scheduled&limit=1`);
+      setTotalPostsCount(totalRes?.pagination?.total || 0);
+      setScheduledCount(scheduledRes?.pagination?.total || 0);
+    } catch (e) {
+      console.warn('Failed to load post counts', e);
+    }
+  };
+
   useEffect(() => {
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 30000);
+    fetchPostCounts();
+    const interval = setInterval(() => {
+      fetchAnalytics();
+      fetchPostCounts();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -99,12 +116,12 @@ const Dashboard = () => {
   const totals = useMemo(() => {
     const sum = (key: string) => analytics.reduce((s, a) => s + (a.metrics?.[key] || 0), 0);
     return {
-      totalPosts: analytics.length,
-      scheduledPosts: 0,
+      totalPosts: totalPostsCount,
+      scheduledPosts: scheduledCount,
       engagementRate: analytics.length ? (((sum('likes') + sum('comments') + sum('shares')) / Math.max(sum('views'), 1)) * 100).toFixed(1) : '0.0',
       avgEngagementScore: analytics.length ? Math.round((sum('likes') + sum('comments') * 2 + sum('shares') * 3) / analytics.length) : 0
     };
-  }, [analytics]);
+  }, [analytics, totalPostsCount, scheduledCount]);
 
 
 
