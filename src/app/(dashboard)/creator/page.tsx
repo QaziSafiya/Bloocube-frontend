@@ -149,17 +149,17 @@ const Dashboard = () => {
       <button 
         onClick={fetchAnalytics}
         disabled={loading}
-        className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        className="flex items-center space-x-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
       >
         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         <span className="text-sm">Refresh</span>
       </button>
-      <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2.5 rounded-xl flex items-center space-x-2 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+      <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1.5 rounded-lg flex items-center space-x-2 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow hover:shadow-md text-sm">
         <Plus className="w-4 h-4" />
         <span className="font-medium">Create Post</span>
       </button>
-      <div className="w-10 h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl flex items-center justify-center">
-        <User className="w-5 h-5 text-gray-600" />
+      <div className="w-8 h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+        <User className="w-4 h-4 text-gray-600" />
       </div>
     </>
   );

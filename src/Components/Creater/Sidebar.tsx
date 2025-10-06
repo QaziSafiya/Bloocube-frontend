@@ -40,23 +40,23 @@ const SidebarItem = React.memo(({
 
   return (
     <button
-      className={`group flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 cursor-pointer transition-all duration-300 ease-in-out rounded-xl mx-2 transform hover:scale-[1.02] hover:shadow-lg text-left ${
+      className={`group flex items-center w-full px-3 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600 cursor-pointer transition-all duration-300 ease-in-out rounded-lg mx-1.5 transform hover:scale-[1.01] hover:shadow-md text-left ${
         isActive
-          ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 shadow-lg border border-blue-200/50 scale-[1.02]'
-          : 'hover:shadow-md'
+          ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 shadow-md border border-blue-200/50 scale-[1.01]'
+          : 'hover:shadow'
       }`}
       onClick={handleClick}
     >
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 transition-all duration-300 ease-in-out ${
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-2.5 transition-all duration-300 ease-in-out ${
         isActive 
-          ? 'bg-gradient-to-r from-blue-500 to-purple-500 shadow-md scale-105' 
+          ? 'bg-gradient-to-r from-blue-500 to-purple-500 shadow scale-105' 
           : 'bg-gray-100 group-hover:bg-gradient-to-r group-hover:from-blue-100 group-hover:to-purple-100 group-hover:scale-105'
       }`}>
-        <item.icon className={`w-5 h-5 transition-all duration-300 ${
-          isActive ? 'text-white scale-110' : 'text-gray-600 group-hover:text-blue-600 group-hover:scale-110'
+        <item.icon className={`w-4 h-4 transition-all duration-300 ${
+          isActive ? 'text-white scale-105' : 'text-gray-600 group-hover:text-blue-600 group-hover:scale-105'
         }`} />
       </div>
-      <span className="font-semibold transition-all duration-300 group-hover:translate-x-1 whitespace-nowrap">{item.name}</span>
+      <span className="font-semibold text-sm transition-all duration-300 group-hover:translate-x-1 whitespace-nowrap">{item.name}</span>
     </button>
   );
 });
@@ -68,16 +68,16 @@ const UserInfo = React.memo(({ user }: { user: Record<string, unknown> | null })
   if (!user) return null;
 
   return (
-    <div className="p-4 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
+    <div className="p-3 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 shadow hover:shadow-md transition-all duration-300">
       <div className="flex items-center space-x-3">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110">
-          <User className="w-6 h-6 text-white" />
+        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center shadow">
+          <User className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900 truncate">
+          <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
             {(user.name as string) || (user.email as string) || 'User'}
           </p>
-          <p className="text-xs text-gray-500 capitalize font-semibold">
+          <p className="text-[11px] text-gray-500 capitalize font-medium leading-tight">
             {(user.role as string) || 'Creator'}
           </p>
         </div>
@@ -130,29 +130,29 @@ const Sidebar = React.memo(() => {
     )), [isItemActive, handleItemClick]);
 
   return (
-    <div className="fixed left-0 top-0 w-64 h-screen bg-white/95 backdrop-blur-md shadow-2xl border-r border-gray-200/50 flex flex-col z-50">
+    <div className="fixed left-0 top-0 w-56 h-screen bg-white/95 backdrop-blur-md shadow-2xl border-r border-gray-200/50 flex flex-col z-50">
       {/* Enhanced Logo Section */}
-      <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
+      <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <span className="text-white font-bold text-xl">B</span>
+          <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
+            <span className="text-white font-bold text-lg">B</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Bloocube</h1>
-            <p className="text-xs text-gray-500 font-medium">Creator Platform</p>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">Bloocube</h1>
+            <p className="text-[11px] text-gray-500 font-medium leading-tight">Creator Platform</p>
           </div>
         </div>
       </div>
       
       {/* Enhanced Navigation */}
-      <nav className="mt-6 flex-1 px-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-        <div className="space-y-1">
+      <nav className="mt-4 flex-1 px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <div className="space-y-1.5">
           {sidebarItemsList}
         </div>
       </nav>
       
       {/* Enhanced User info and logout section */}
-      <div className="p-4 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-blue-50/30">
+      <div className="p-3 border-t border-gray-200/50 bg-gradient-to-r from-gray-50/50 to-blue-50/30">
         <UserInfo user={user} />
         <div className="mt-3">
           <Logout className="w-full justify-center flex bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105" />

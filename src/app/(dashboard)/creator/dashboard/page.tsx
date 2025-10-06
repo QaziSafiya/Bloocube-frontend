@@ -21,7 +21,14 @@ import { apiRequest } from '@/lib/apiClient';
 import { authUtils } from '@/lib/auth';
 
 const Dashboard = () => {
-  const [analytics, setAnalytics] = useState<Array<Record<string, any>>>([]);
+  type AnalyticsItem = {
+    post_id?: string;
+    platform?: string;
+    timing?: { posted_at?: string };
+    metrics?: { likes?: number; comments?: number; shares?: number; views?: number };
+    content?: { media_type?: string; caption?: string };
+  };
+  const [analytics, setAnalytics] = useState<AnalyticsItem[]>([]);
   const [scheduledCount, setScheduledCount] = useState<number>(0);
   const [totalPostsCount, setTotalPostsCount] = useState<number>(0);
 
@@ -30,7 +37,7 @@ const Dashboard = () => {
       const user = authUtils.getUser() as { id?: string } | null;
       const userId = user?.id || (authUtils as unknown as { getUserId?: () => string }).getUserId?.();
       if (!userId) throw new Error('Not authenticated');
-      const res = await apiRequest<{ success: boolean; data: { analytics: any[] } }>(`/api/analytics/user/${userId}`);
+      const res = await apiRequest<{ success: boolean; data: { analytics: AnalyticsItem[] } }>(`/api/analytics/user/${userId}`);
       setAnalytics(res?.data?.analytics || []);
     } catch (e) {
       console.error('Failed to fetch analytics:', e);
@@ -102,19 +109,19 @@ const Dashboard = () => {
   const topPosts = useMemo(() => {
     return [...analytics]
       .map((a) => ({
-        id: a.post_id,
+        id: a.post_id || '',
         thumbnail: a.content?.media_type === 'video' ? '🎥' : '📸',
-        content: a.content?.caption || a.post_id,
+        content: a.content?.caption || a.post_id || '',
         platform: (a.platform || '').toString(),
         engagement: String((a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.shares || 0)),
-        platformColor: getPlatformColor(a.platform)
+        platformColor: getPlatformColor((a.platform || '').toString())
       }))
       .sort((p1, p2) => parseInt(p2.engagement) - parseInt(p1.engagement))
       .slice(0, 5);
   }, [analytics]);
 
   const totals = useMemo(() => {
-    const sum = (key: string) => analytics.reduce((s, a) => s + (a.metrics?.[key] || 0), 0);
+    const sum = (key: 'likes' | 'comments' | 'shares' | 'views') => analytics.reduce((s, a) => s + (a.metrics?.[key] || 0), 0);
     return {
       totalPosts: totalPostsCount,
       scheduledPosts: scheduledCount,
@@ -127,12 +134,12 @@ const Dashboard = () => {
 
   const headerActions = (
     <>
-      <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2.5 rounded-xl flex items-center space-x-2 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md">
+      <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1.5 rounded-lg flex items-center space-x-2 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow text-sm">
         <Plus className="w-4 h-4" />
-        <span>Create New Post</span>
+        <span>Create Post</span>
       </button>
-      <div className="w-10 h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl flex items-center justify-center">
-        <User className="w-5 h-5 text-gray-600" />
+      <div className="w-8 h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+        <User className="w-4 h-4 text-gray-600" />
       </div>
     </>
   );

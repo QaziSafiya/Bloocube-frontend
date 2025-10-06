@@ -273,14 +273,14 @@ const CompetitorAnalysisPage = () => {
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/creator/competitors/analyze">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+              <button className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm">
                 <Plus className="w-4 h-4" />
                 <span>New Analysis</span>
               </button>
             </Link>
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+              className="border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 text-sm"
             >
               <BarChart3 className="w-4 h-4" />
               <span>History</span>
@@ -292,7 +292,7 @@ const CompetitorAnalysisPage = () => {
                 placeholder="Search competitors..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200 min-w-[300px]"
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200 min-w-[260px] text-sm"
               />
             </div>
           </div>
@@ -300,7 +300,7 @@ const CompetitorAnalysisPage = () => {
       </div>
 
       {/* Quick Analysis Form */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-5 mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -312,11 +312,11 @@ const CompetitorAnalysisPage = () => {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Platform</label>
             <select 
-              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
+              className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
               value={quickPlatform}
               onChange={(e) => setQuickPlatform(e.target.value)}
             >
@@ -334,7 +334,7 @@ const CompetitorAnalysisPage = () => {
               value={quickInput}
               onChange={(e) => setQuickInput(e.target.value)}
               placeholder="e.g. https://instagram.com/creator or @creator"
-              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
+              className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
             />
             {quickError && <div className="text-sm text-red-600">{quickError}</div>}
           </div>
@@ -342,7 +342,7 @@ const CompetitorAnalysisPage = () => {
             <button
               onClick={startQuickAnalysis}
               disabled={quickLoading}
-              className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 text-sm"
             >
               {quickLoading ? 'Analyzing…' : 'Analyze Now'}
             </button>
@@ -351,7 +351,7 @@ const CompetitorAnalysisPage = () => {
       </div>
 
       {/* Enhanced Filters Section */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8 hover:shadow-md transition-all duration-200">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-5 mb-8 hover:shadow-md transition-all duration-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl flex items-center justify-center">
@@ -371,7 +371,7 @@ const CompetitorAnalysisPage = () => {
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Platform</label>
             <select 
-              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
+              className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
               value={selectedPlatform} 
               onChange={(e) => setSelectedPlatform(e.target.value)}
             >
@@ -387,7 +387,7 @@ const CompetitorAnalysisPage = () => {
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Category</label>
             <select 
-              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
+              className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
               value={selectedCategory} 
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
@@ -405,7 +405,7 @@ const CompetitorAnalysisPage = () => {
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Follower Range</label>
             <select 
-              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
+              className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
               defaultValue=""
             >
               <option value="">Any Size</option>
@@ -419,7 +419,7 @@ const CompetitorAnalysisPage = () => {
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Engagement Level</label>
             <select 
-              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
+              className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
               defaultValue=""
             >
               <option value="">Any Level</option>
