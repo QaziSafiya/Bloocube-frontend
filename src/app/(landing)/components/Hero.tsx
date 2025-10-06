@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import Button from '@/Components/ui/Button';
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaPinterest, FaRedditAlien, FaSlack, FaWhatsapp, FaGithub, FaDiscord } from "react-icons/fa";
+import { useRouter } from 'next/navigation';
 
 const Hero: React.FC = () => {
   // Typewriter state (must be at top-level for hooks rules)
@@ -11,6 +12,10 @@ const Hero: React.FC = () => {
   const [index, setIndex] = useState(0);
   const [subIndex, setSubIndex] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  
+  // Email form state
+  const [email, setEmail] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const current = words[index];
@@ -28,6 +33,14 @@ const Hero: React.FC = () => {
     }, deleting ? 75 : 105);
     return () => clearTimeout(timeout);
   }, [subIndex, deleting, index, words]);
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      // Redirect to signup page with email parameter
+      router.push(`/signup?email=${encodeURIComponent(email.trim())}`);
+    }
+  };
 
   return (
     <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 md:pt-28 pb-20 sm:pb-28 md:pb-36">
@@ -65,9 +78,9 @@ const Hero: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.05 }}
           className="mx-auto mb-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10.5px] sm:text-[11px] text-zinc-300 backdrop-blur"
         >
-          AI-powered social marketing OS
+          AI-powered social media Management System
           <span className="h-1 w-1 rounded-full bg-emerald-400/80" />
-          Ship content with confidence
+          Monetize your content in 1 click
         </motion.div>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -75,21 +88,26 @@ const Hero: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-sm sm:text-[15px] md:text-base text-zinc-300/90 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-1"
         >
-          Operate campaigns, insights, and publishing from one streamlined system. Enterprise-grade security, delightful UX.
+          Auto-posting, analytics, AI captions & hashtags, DM automation, competitor research
+          <br />
+          <span className="text-center block">-all in one platform</span>
         </motion.p>
         <motion.form
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mx-auto flex w-full max-w-md sm:max-w-xl flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 rounded-full sm:rounded-full border border-white/10 bg-white/[0.04] p-2 backdrop-blur px-2 sm:px-3"
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={handleEmailSubmit}
         >
           <input
             type="email"
             placeholder="Work email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="flex-1 bg-transparent px-3 sm:px-4 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none w-full"
+            required
           />
-          <Button size="md" className="w-full sm:w-auto">
+          <Button type="submit" size="md" className="w-full sm:w-auto">
             Start free trial
             <ArrowRight className="inline-block ml-2 w-4 h-4" />
           </Button>
@@ -109,10 +127,22 @@ const Hero: React.FC = () => {
           className="mx-auto mt-6 sm:mt-8 flex max-w-lg sm:max-w-xl flex-wrap items-center justify-center gap-2.5 sm:gap-4 opacity-80 px-1"
         >
           <span className="text-[10.5px] sm:text-[11px] text-zinc-500">Trusted by teams at</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Acme Co.</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Vertex Labs</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Northstar</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Everline</span>
+          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-blue-400/50 hover:bg-blue-500/10 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:scale-105 cursor-pointer">
+            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative z-10">Acme Co.</span>
+          </span>
+          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-105 cursor-pointer">
+            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-emerald-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative z-10">Vertex Labs</span>
+          </span>
+          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-purple-400/50 hover:bg-purple-500/10 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 cursor-pointer">
+            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative z-10">Northstar</span>
+          </span>
+          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-orange-400/50 hover:bg-orange-500/10 hover:shadow-[0_0_20px_rgba(251,146,60,0.3)] hover:scale-105 cursor-pointer">
+            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-orange-500/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative z-10">Everline</span>
+          </span>
         </motion.div>
       </div>
     </section>

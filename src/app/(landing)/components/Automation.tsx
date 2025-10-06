@@ -24,13 +24,16 @@ export default function Automation() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
-            className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 backdrop-blur text-center hover:border-white/20 transition"
+            className="group relative rounded-2xl p-6 bg-white/[0.04] border border-white/10 backdrop-blur text-center hover:border-white/20 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:scale-[1.03] transition-all duration-300 cursor-pointer"
           >
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center">
-              <s.icon className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-cyan-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative z-10">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                <s.icon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-white group-hover:text-emerald-300 transition-colors duration-300">{s.title}</h3>
+              <p className="text-sm text-zinc-400 mt-1 group-hover:text-zinc-300 transition-colors duration-300">{s.desc}</p>
             </div>
-            <h3 className="text-base font-semibold text-white">{s.title}</h3>
-            <p className="text-sm text-zinc-400 mt-1">{s.desc}</p>
           </motion.div>
         ))}
       </div>

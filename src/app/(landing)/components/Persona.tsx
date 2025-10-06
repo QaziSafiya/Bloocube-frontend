@@ -23,21 +23,24 @@ export default function Persona() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.4, delay: i * 0.05 }}
-            className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 backdrop-blur hover:border-white/20 transition"
+            className="group relative rounded-2xl p-6 bg-white/[0.04] border border-white/10 backdrop-blur hover:border-white/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.2)] hover:scale-[1.02] cursor-pointer"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 flex items-center justify-center">
-                <p.icon className="w-5 h-5 text-white" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <p.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors duration-300">{p.title}</h3>
               </div>
-              <h3 className="text-lg font-semibold text-white">{p.title}</h3>
+              <ul className="space-y-2">
+                {p.benefits.map((b) => (
+                  <li key={b} className="text-sm text-zinc-300 flex items-center gap-2 group-hover:text-zinc-200 transition-colors duration-300">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300" /> {b}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-2">
-              {p.benefits.map((b) => (
-                <li key={b} className="text-sm text-zinc-300 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" /> {b}
-                </li>
-              ))}
-            </ul>
           </motion.div>
         ))}
       </div>
