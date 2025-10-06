@@ -59,14 +59,37 @@ const SignupForm: React.FC = () => {
 
       console.log("✅ Signup successful:", data);
 
-      // If backend returns tokens and user, auto-login; else fallback to login
+      // If backend returns tokens and user, auto-login; else fallback to programmatic login
       if (data?.data?.tokens?.accessToken && data?.data?.user) {
         localStorage.setItem('token', data.data.tokens.accessToken);
         localStorage.setItem('user', JSON.stringify(data.data.user));
         const role = data.data.user?.role;
         router.push(role === 'brand' ? '/brand' : '/creator');
       } else {
-        router.push('/login');
+        // Attempt programmatic login using provided credentials to avoid extra step
+        try {
+          const loginResp = await apiRequest<{ success: boolean; data: { tokens: { accessToken: string; refreshToken?: string }; user: { role: string } }; message?: string }>(
+            '/api/auth/login',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password })
+            }
+          );
+
+          localStorage.setItem('token', loginResp.data.tokens.accessToken);
+          if (loginResp.data.tokens.refreshToken) {
+            localStorage.setItem('refreshToken', loginResp.data.tokens.refreshToken);
+          }
+          localStorage.setItem('user', JSON.stringify(loginResp.data.user));
+
+          const roleAfterSignup = loginResp.data.user?.role;
+          router.push(roleAfterSignup === 'brand' ? '/brand' : '/creator');
+        } catch (loginErr) {
+          // If auto-login fails, as a last resort send user to login
+          console.error('Auto-login after signup failed:', loginErr);
+          router.push('/login');
+        }
       }
     } catch (err: unknown) {
       console.error("Signup error:", err instanceof Error ? err.message : 'Unknown error');
