@@ -41,24 +41,35 @@ export default function BrandBidsPage() {
           setError('Login required');
           return;
         }
-        const res = await campaignService.listByBrand(brandId as string, { limit: 50 });
+        // Limit number of campaigns to avoid N+1 overload
+        const res = await campaignService.listByBrand(brandId as string, { limit: 20 });
         const campaigns = res.data.campaigns || [];
         if (campaigns.length === 0) {
           setBids([]);
           return;
         }
-        const results = await Promise.allSettled(
-          campaigns.map(c => status
-            ? campaignService.listBids(c._id as string, { status })
-            : campaignService.listBids(c._id as string)
-          )
-        );
-        const allBids: Bid[] = [];
-        results.forEach(r => {
-          if (r.status === 'fulfilled') {
-            allBids.push(...(r.value.data?.bids || []));
+        // Concurrency-limited fetching to reduce main-thread blocking
+        const concurrency = 4;
+        const queue = [...campaigns];
+        const collected: Bid[] = [];
+        async function worker() {
+          while (queue.length) {
+            const c = queue.shift();
+            if (!c) break;
+            try {
+              const r = await (status
+                ? campaignService.listBids(c._id as string, { status })
+                : campaignService.listBids(c._id as string)
+              );
+              const list = r.data?.bids || [];
+              if (!cancelled && list.length) collected.push(...list);
+            } catch (e) {
+              // ignore per-campaign errors to keep UI responsive
+            }
           }
-        });
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, campaigns.length) }, () => worker()));
+        const allBids = collected;
         if (!cancelled) setBids(allBids);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load bids');

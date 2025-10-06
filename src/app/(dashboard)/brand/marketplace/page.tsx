@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { userService, type CreatorUser } from '@/lib/userService';
 import { Search, Filter, Users, Star, MapPin, Eye, MessageCircle, Plus, Zap, ChevronDownIcon, CheckIcon } from 'lucide-react';
 
 interface Creator {
@@ -54,119 +55,58 @@ export default function BrandMarketplacePage() {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
-  // Mock data for demonstration
+  // Dynamic load creators
   useEffect(() => {
-    const mockCreators: Creator[] = [
-      {
-        id: '1',
-        name: 'Sarah Johnson',
-        handle: '@sarahjohnson',
-        bio: 'Lifestyle & Fashion Content Creator | Brand Collaborations | Authentic Storytelling',
-        location: 'Mumbai, India',
-        platforms: ['Instagram', 'YouTube', 'TikTok'],
-        followers: {
-          total: 125000,
-          breakdown: { Instagram: 85000, YouTube: 25000, TikTok: 15000 }
-        },
-        engagement: {
-          rate: 4.8,
-          avgLikes: 4200,
-          avgComments: 320,
-          avgShares: 180
-        },
-        rating: 4.9,
-        reviewCount: 47,
-        categories: ['Fashion', 'Lifestyle', 'Beauty'],
-        verified: true,
-        recentWork: [
-          {
-            title: 'Summer Fashion Haul',
-            platform: 'Instagram',
-            metrics: { views: 45000, likes: 5200, comments: 380 }
-          },
-          {
-            title: 'Skincare Routine Video',
-            platform: 'YouTube',
-            metrics: { views: 28000, likes: 3100, comments: 245 }
-          }
-        ],
-        pricing: { min: 15000, max: 50000, currency: 'INR' },
-        availability: 'available',
-        responseTime: '< 2 hours',
-        completionRate: 98
-      },
-      {
-        id: '2',
-        name: 'Tech Reviewer Pro',
-        handle: '@techreviewerpro',
-        bio: 'Technology Reviews | Gadget Unboxings | Tech Tips & Tutorials',
-        location: 'Bangalore, India',
-        platforms: ['YouTube', 'Twitter', 'LinkedIn'],
-        followers: {
-          total: 890000,
-          breakdown: { YouTube: 650000, Twitter: 180000, LinkedIn: 60000 }
-        },
-        engagement: {
-          rate: 6.2,
-          avgLikes: 12000,
-          avgComments: 850,
-          avgShares: 420
-        },
-        rating: 4.7,
-        reviewCount: 89,
-        categories: ['Technology', 'Reviews', 'Education'],
-        verified: true,
-        recentWork: [
-          {
-            title: 'iPhone 15 Pro Review',
-            platform: 'YouTube',
-            metrics: { views: 125000, likes: 8900, comments: 1200 }
-          }
-        ],
-        pricing: { min: 25000, max: 100000, currency: 'INR' },
-        availability: 'busy',
-        responseTime: '< 4 hours',
-        completionRate: 95
-      },
-      {
-        id: '3',
-        name: 'Fitness Guru',
-        handle: '@fitnessguru',
-        bio: 'Certified Personal Trainer | Nutrition Expert | Fitness Motivation',
-        location: 'Delhi, India',
-        platforms: ['Instagram', 'YouTube', 'TikTok'],
-        followers: {
-          total: 450000,
-          breakdown: { Instagram: 280000, YouTube: 120000, TikTok: 50000 }
-        },
-        engagement: {
-          rate: 7.1,
-          avgLikes: 8500,
-          avgComments: 650,
-          avgShares: 320
-        },
-        rating: 4.8,
-        reviewCount: 62,
-        categories: ['Fitness', 'Health', 'Lifestyle'],
-        verified: false,
-        recentWork: [
-          {
-            title: '30-Day Abs Challenge',
-            platform: 'Instagram',
-            metrics: { views: 85000, likes: 9200, comments: 780 }
-          }
-        ],
-        pricing: { min: 20000, max: 75000, currency: 'INR' },
-        availability: 'available',
-        responseTime: '< 1 hour',
-        completionRate: 99
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await userService.listCreators({ active: 'true' });
+        const users = res.data?.users || [];
+        const mapped: Creator[] = users.map((u: CreatorUser) => {
+          const ig = (u.socialAccounts as any)?.instagram;
+          const yt = (u.socialAccounts as any)?.youtube;
+          const tw = (u.socialAccounts as any)?.twitter;
+          const platforms: string[] = [
+            ig?.username ? 'Instagram' : null,
+            yt?.id ? 'YouTube' : null,
+            tw?.username ? 'Twitter' : null
+          ].filter(Boolean) as string[];
+          return {
+            id: u._id,
+            name: u.name || u.email || 'Creator',
+            handle: ig?.username ? `@${ig.username}` : (tw?.username ? `@${tw.username}` : ''),
+            bio: u.profile?.bio || '',
+            location: '',
+            platforms,
+            followers: {
+              total: Number(yt?.subscriberCount || 0),
+              breakdown: {
+                Instagram: 0,
+                YouTube: Number(yt?.subscriberCount || 0),
+                TikTok: 0
+              }
+            },
+            engagement: { rate: 0, avgLikes: 0, avgComments: 0, avgShares: 0 },
+            rating: 0,
+            reviewCount: 0,
+            categories: [],
+            verified: false,
+            recentWork: [],
+            pricing: { min: 0, max: 0, currency: 'INR' },
+            availability: 'available',
+            responseTime: '-',
+            completionRate: 0
+          };
+        });
+        if (!cancelled) setCreators(mapped);
+      } catch (e) {
+        if (!cancelled) setCreators([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    ];
-
-    setTimeout(() => {
-      setCreators(mockCreators);
-      setLoading(false);
-    }, 1000);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const filteredCreators = creators.filter(creator => {
