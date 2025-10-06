@@ -810,7 +810,8 @@ const createTwitterPostPayload = (postData: any, selectedPostType: string, media
       try {
         if (action === 'publish') {
           await apiRequest(`/api/posts/${postId}/publish`, {
-            method: 'PUT'
+            method: 'PUT',
+            
           });
           console.log('✅ Post published successfully');
           publishSuccess = true;
