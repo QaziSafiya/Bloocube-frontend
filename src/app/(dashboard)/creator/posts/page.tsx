@@ -34,6 +34,7 @@ import {
 import CreatorLayout from '@/Components/Creater/CreatorLayout';
 import { apiRequest } from '@/lib/apiClient';
 import { authUtils } from '@/lib/auth';
+import { aiServiceJson } from '@/lib/api';
 
 // Platform configurations
 const PLATFORM_CONFIGS = {
@@ -197,14 +198,53 @@ const TwitterPostForm = ({ postData, onFieldChange, selectedPostType }: {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Tweet Content *
         </label>
-        <textarea
-          value={postData.content || ''}
-          onChange={(e) => onFieldChange('content', e.target.value)}
-          placeholder="What's happening?"
-          maxLength={280}
-          rows={3}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-        />
+        <div className="relative">
+          <textarea
+            value={postData.content || ''}
+            onChange={(e) => onFieldChange('content', e.target.value)}
+            placeholder="What's happening?"
+            maxLength={280}
+            rows={3}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none pr-10"
+          />
+          <button
+            type="button"
+            aria-label="Improve with AI"
+            className="absolute right-2 top-2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+            onClick={async () => {
+              const content = (postData.content || '').toString();
+              if (!content.trim()) return;
+              try {
+                const body = {
+                  user_id: 'current',
+                  content_type: 'tweet',
+                  platform: 'twitter',
+                  content,
+                  target_audience: 'general',
+                  goals: ['engagement'],
+                  tone: 'friendly',
+                  include_hashtags: true,
+                  include_captions: true,
+                  include_posting_times: false,
+                  include_content_ideas: false,
+                  max_suggestions: 3
+                };
+                const resp = await aiServiceJson<any>('/ai/suggestions', {
+                  method: 'POST',
+                  body: JSON.stringify(body)
+                });
+                // Prefer a short, improved caption from captions list if available
+                const captions = resp?.suggestions?.captions || resp?.captions || [];
+                const best = (captions[0]?.caption || captions[0]) || null;
+                if (best) onFieldChange('content', best.slice(0, 280));
+              } catch (e) {
+                console.error('AI suggestion failed', e);
+              }
+            }}
+          >
+            ✨
+          </button>
+        </div>
         <div className="text-xs text-gray-500 mt-1">
           {postData.content?.length || 0}/280 characters
         </div>
@@ -856,14 +896,53 @@ const createTwitterPostPayload = (postData: any, selectedPostType: string, media
                   {field.charAt(0).toUpperCase() + field.slice(1)} 
                   {fieldConfig.required && <span className="text-red-500">*</span>}
                 </label>
-                <textarea
-                  value={postData[field] || ''}
-                  onChange={(e) => handleFieldChange(field, e.target.value)}
-                  placeholder={(fieldConfig as any).placeholder}
-                  maxLength={(fieldConfig as any).maxLength}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
+                <div className="relative">
+                  <textarea
+                    value={postData[field] || ''}
+                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                    placeholder={(fieldConfig as any).placeholder}
+                    maxLength={(fieldConfig as any).maxLength}
+                    rows={4}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none pr-10"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Improve with AI"
+                    className="absolute right-2 top-2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+                    onClick={async () => {
+                      const content = (postData[field] || '').toString();
+                      if (!content.trim()) return;
+                      try {
+                        const ct = selectedPlatform === 'youtube' ? (selectedPostType === 'short' ? 'short' : 'video') : 'post';
+                        const body = {
+                          user_id: 'current',
+                          content_type: ct,
+                          platform: selectedPlatform,
+                          content,
+                          target_audience: 'general',
+                          goals: ['engagement'],
+                          tone: 'friendly',
+                          include_hashtags: true,
+                          include_captions: true,
+                          include_posting_times: false,
+                          include_content_ideas: false,
+                          max_suggestions: 3
+                        } as any;
+                        const resp = await aiServiceJson<any>('/ai/suggestions', {
+                          method: 'POST',
+                          body: JSON.stringify(body)
+                        });
+                        const captions = resp?.suggestions?.captions || resp?.captions || [];
+                        const best = (captions[0]?.caption || captions[0]) || null;
+                        if (best) handleFieldChange(field, best.slice(0, (fieldConfig as any).maxLength || 3000));
+                      } catch (e) {
+                        console.error('AI suggestion failed', e);
+                      }
+                    }}
+                  >
+                    ✨
+                  </button>
+                </div>
                 {(fieldConfig as any).maxLength && (
                   <div className="text-xs text-gray-500 mt-1">
                     {(postData[field] || '').length}/{(fieldConfig as any).maxLength}
@@ -896,20 +975,62 @@ const createTwitterPostPayload = (postData: any, selectedPostType: string, media
             );
           }
 
+          const isUrl = (fieldConfig as any).type === 'url';
           return (
             <div key={field}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {field.charAt(0).toUpperCase() + field.slice(1)}
                 {fieldConfig.required && <span className="text-red-500">*</span>}
               </label>
-              <input
-                type={(fieldConfig as any).type === 'url' ? 'url' : 'text'}
-                value={postData[field] || ''}
-                onChange={(e) => handleFieldChange(field, e.target.value)}
-                placeholder={(fieldConfig as any).placeholder}
-                maxLength={(fieldConfig as any).maxLength}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div className="relative">
+                <input
+                  type={isUrl ? 'url' : 'text'}
+                  value={postData[field] || ''}
+                  onChange={(e) => handleFieldChange(field, e.target.value)}
+                  placeholder={(fieldConfig as any).placeholder}
+                  maxLength={(fieldConfig as any).maxLength}
+                  className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isUrl ? '' : 'pr-10'}`}
+                />
+                {!isUrl && (
+                  <button
+                    type="button"
+                    aria-label="Improve with AI"
+                    className="absolute right-2 top-2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+                    onClick={async () => {
+                      const content = (postData[field] || '').toString();
+                      if (!content.trim()) return;
+                      try {
+                        const ct = selectedPlatform === 'youtube' ? (selectedPostType === 'short' ? 'short' : 'video') : 'post';
+                        const body = {
+                          user_id: 'current',
+                          content_type: ct,
+                          platform: selectedPlatform,
+                          content,
+                          target_audience: 'general',
+                          goals: ['engagement'],
+                          tone: 'friendly',
+                          include_hashtags: true,
+                          include_captions: true,
+                          include_posting_times: false,
+                          include_content_ideas: false,
+                          max_suggestions: 3
+                        } as any;
+                        const resp = await aiServiceJson<any>('/ai/suggestions', {
+                          method: 'POST',
+                          body: JSON.stringify(body)
+                        });
+                        const captions = resp?.suggestions?.captions || resp?.captions || [];
+                        const best = (captions[0]?.caption || captions[0]) || null;
+                        if (best) handleFieldChange(field, best.slice(0, (fieldConfig as any).maxLength || 3000));
+                      } catch (e) {
+                        console.error('AI suggestion failed', e);
+                      }
+                    }}
+                  >
+                    ✨
+                  </button>
+                )}
+              </div>
               {(fieldConfig as any).maxLength && (
                 <div className="text-xs text-gray-500 mt-1">
                   {(postData[field] || '').length}/{(fieldConfig as any).maxLength}
