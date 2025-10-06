@@ -1,12 +1,14 @@
 // src/lib/config.ts
 export const config = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL,
-  appUrl: 'http://localhost:3000',
+  appUrl: process.env.NEXT_FRONTEND_API_URL,
   twitter: {
-    callbackUrl: 'http://localhost:3000/auth/twitter/callback'
+    // callbackUrl: 'http://localhost:3000/auth/twitter/callback'
+    callbackUrl: process.env.NEXT_FRONTEND_API_URL + '/auth/twitter/callback'
   },
   youtube: {
-    callbackUrl: 'http://localhost:3000/auth/youtube/callback'
+    // callbackUrl: 'http://localhost:3000/auth/youtube/callback'
+    callbackUrl: process.env.NEXT_FRONTEND_API_URL + '/auth/youtube/callback'
   },
 };
 
@@ -16,5 +18,5 @@ export const getApiBase = (): string => {
   if (!base) {
     throw new Error('NEXT_PUBLIC_API_URL is not set. Configure it in your deployment env or .env.local');
   }
-  return base.replace(/\/+$/, '');
+  return base.replace(/\/+$/, '');
 };
