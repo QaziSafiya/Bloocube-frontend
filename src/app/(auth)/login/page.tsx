@@ -13,6 +13,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +32,7 @@ const LoginPage: React.FC = () => {
     }
 
     try {
+      setIsSubmitting(true);
       const data = await apiRequest<{ success: boolean; data: { tokens: { accessToken: string; refreshToken?: string }; user: { role: string } }; message?: string }>(
         '/api/auth/login',
         {
@@ -65,8 +67,18 @@ const LoginPage: React.FC = () => {
         router.push('/creator');
       }
     } catch (err: unknown) {
-      setError("Network error. Please try again later.");
-      console.error("Login error:", err instanceof Error ? err.message : 'Unknown error');
+      const apiErr = err as { status?: number; retryAfter?: number; message?: string };
+      if (apiErr && apiErr.status === 429) {
+        const retryAfter = typeof apiErr.retryAfter === 'number' ? apiErr.retryAfter : undefined;
+        setError(retryAfter ? `Too many attempts. Try again in ${retryAfter}s.` : 'Too many attempts. Please wait and try again.');
+      } else if (apiErr && typeof apiErr.message === 'string') {
+        setError(apiErr.message || 'Network error. Please try again later.');
+      } else {
+        setError('Network error. Please try again later.');
+      }
+      console.error("Login error:", apiErr);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -171,8 +183,8 @@ const LoginPage: React.FC = () => {
                   className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
                 />
               </div>
-              <Button type="submit" size="md" className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
-                Sign In
+              <Button type="submit" size="md" disabled={isSubmitting} className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+                {isSubmitting ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
             

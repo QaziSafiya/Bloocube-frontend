@@ -83,6 +83,7 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
   const base = getApiBase();
   const method = init.method || 'GET';
   const cacheKey = getCacheKey(path, init);
+  const isAuthEndpoint = path.startsWith('/api/auth');
   
   // Check cache for GET requests
   if (shouldCache(path, method)) {
@@ -151,10 +152,23 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
 
       // Exponential backoff for 429 and 5xx
       if ((res.status === 429 || (res.status >= 500 && res.status <= 599)) && retries > 0) {
-        const attempt = Math.max(1, 2 - retries + 1);
-        const delay = Math.min(300 * Math.pow(2, attempt - 1), 3000);
-        await sleep(delay);
-        return apiRequest<T>(path, init, retries - 1);
+        // Do not retry auth endpoints on 429 to avoid compounding attempts
+        if (res.status === 429 && isAuthEndpoint) {
+          // fall through to error handling
+        } else {
+          const headerRetryAfter = res.headers.get('Retry-After');
+          const retryAfterSeconds = headerRetryAfter ? parseInt(headerRetryAfter, 10) : NaN;
+          type RetryBody = { retryAfter?: number } | null;
+          const body: RetryBody = await res.clone().json().catch(() => null);
+          const bodyRetryAfter = body && typeof body.retryAfter === 'number' ? body.retryAfter : NaN;
+          const backoffMs = !Number.isNaN(retryAfterSeconds)
+            ? Math.min(retryAfterSeconds * 1000, 5000)
+            : !Number.isNaN(bodyRetryAfter)
+              ? Math.min(bodyRetryAfter * 1000, 5000)
+              : Math.min(300 * Math.pow(2, Math.max(1, 2 - retries + 1) - 1), 3000);
+          await sleep(backoffMs);
+          return apiRequest<T>(path, init, retries - 1);
+        }
       }
 
       if (!res.ok) {
@@ -166,7 +180,7 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
           body = { message: `HTTP ${res.status} ${res.statusText}` };
         }
         
-        const parsed = body as { error?: string; message?: string; code?: string | number; details?: unknown; validation_errors?: unknown; errors?: unknown; validation?: unknown } | null;
+        const parsed = body as { error?: string; message?: string; code?: string | number; details?: unknown; validation_errors?: unknown; errors?: unknown; validation?: unknown; retryAfter?: number } | null;
         const baseMessage = (parsed?.error || parsed?.message);
         const message = res.status === 403 ? (baseMessage || 'Permission denied') : (baseMessage || `HTTP ${res.status}`);
         
@@ -187,7 +201,18 @@ export async function apiRequest<T = unknown>(path: string, init: RequestInit = 
           throw new Error(`Validation failed: ${JSON.stringify(parsed.errors)}`);
         }
         
-        throw new Error(message);
+        class ApiError extends Error {
+          status: number;
+          code?: string | number;
+          retryAfter?: number;
+          constructor(msg: string, status: number, code?: string | number, retryAfter?: number) {
+            super(msg);
+            this.status = status;
+            this.code = code;
+            this.retryAfter = retryAfter;
+          }
+        }
+        throw new ApiError(message, res.status, parsed?.code, parsed?.retryAfter);
       }
 
       const data = await res.json() as T;

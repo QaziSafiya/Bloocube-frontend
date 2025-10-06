@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Menu, X, Bell, Search, User } from 'lucide-react';
 import Sidebar from './Sidebar';
 
@@ -18,16 +18,6 @@ const CreatorLayout: React.FC<CreatorLayoutProps> = ({
   headerActions 
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -68,20 +58,13 @@ const CreatorLayout: React.FC<CreatorLayoutProps> = ({
             <Menu className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-semibold text-gray-900 truncate">{title}</h1>
-          <div className="flex items-center space-x-2" ref={menuRef}>
+          <div className="flex items-center space-x-2">
             <button className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200">
               <Bell className="w-4 h-4" />
             </button>
-            <button onClick={() => setMenuOpen(v => !v)} className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200">
+            <button className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200">
               <User className="w-4 h-4" />
             </button>
-            {menuOpen && (
-              <div className="absolute right-4 top-12 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
-                <a href="/creator/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Profile</a>
-                <a href="/creator/bids" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Bids</a>
-                <a href="/logout" className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Logout</a>
-              </div>
-            )}
           </div>
         </div>
 

@@ -37,7 +37,18 @@ export function useAuth() {
   const updateUser = useCallback((newUser: typeof user) => {
     setUser(newUser);
     if (newUser) {
-      authUtils.setAuth('', newUser); // Update localStorage
+      // Preserve existing token; only update user object
+      try {
+        const token = authUtils.getToken() || '';
+        authUtils.setAuth(token, newUser);
+      } catch {
+        // Fallback: store user only
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(newUser));
+          }
+        } catch {}
+      }
     } else {
       authUtils.clearAuth();
     }
