@@ -98,8 +98,8 @@ const SignupForm: React.FC = () => {
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-8 lg:px-16 xl:px-24">
-        <div className="w-full max-w-7xl flex">
+    <section className="min-h-screen flex items-center justify-center px-6 sm:px-8 md:px-12">
+        <div className="w-full max-w-7xl flex items-stretch gap-8 md:gap-12">
           {/* Left Side - Banner Section */}
           <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center pr-8 xl:pr-16">
           <motion.div
@@ -146,12 +146,12 @@ const SignupForm: React.FC = () => {
         </div>
 
           {/* Right Side - Signup Form */}
-          <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center pl-8 xl:pl-16">
+          <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center lg:pl-12 xl:pl-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="w-full max-w-md bg-black/80 backdrop-blur-xl rounded-3xl p-8 text-white border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+            className="w-full max-w-md bg-black/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 text-white border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
           >
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-2">Create Your Account</h2>

@@ -8,8 +8,10 @@ import Link from "next/link";
 import clsx from "clsx";
 
 const navItems = [
-  { href: "#features", label: "Features" },
-  { href: "#pricing", label: "Pricing" },
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/#features", label: "Features" },
+  { href: "/#pricing", label: "Pricing" },
 ];
 
 const Navbar = () => {
@@ -38,7 +40,8 @@ const Navbar = () => {
           
           {/* Content */}
           <div className="relative z-10">
-            <div className="flex h-14 md:h-16 items-center justify-between">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+              <div className="flex h-14 md:h-16 items-center justify-between">
               {/* Logo */}
               <Link href="/" className="group flex items-center gap-3">
                 <motion.div
@@ -63,9 +66,11 @@ const Navbar = () => {
                     key={item.label}
                     href={item.href}
                     onClick={(e) => {
-                      if (item.href.startsWith('#')) {
+                      const isHash = item.href.startsWith('#') || item.href.startsWith('/#');
+                      if (isHash && typeof window !== 'undefined' && window.location.pathname === '/') {
                         e.preventDefault();
-                        const el = document.querySelector(item.href);
+                        const hash = item.href.split('#')[1];
+                        const el = hash ? document.getElementById(hash) : null;
                         if (el) {
                           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           setOpen(false);
@@ -98,6 +103,7 @@ const Navbar = () => {
               >
                 {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
+              </div>
             </div>
           </div>
         </div>
@@ -112,19 +118,19 @@ const Navbar = () => {
           transition={{ duration: 0.3 }}
           className="md:hidden mt-4 rounded-xl border border-white/10 bg-black/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden"
         >
-          <div className="px-6 py-4 space-y-3">
+          <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
             {navItems.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
                 className="block text-zinc-300 hover:text-white transition-all duration-300 py-2 px-3 rounded-lg hover:bg-white/5"
                 onClick={(e) => {
-                  if (item.href.startsWith('#')) {
+                  const isHash = item.href.startsWith('#') || item.href.startsWith('/#');
+                  if (isHash && typeof window !== 'undefined' && window.location.pathname === '/') {
                     e.preventDefault();
-                    const el = document.querySelector(item.href);
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
+                    const hash = item.href.split('#')[1];
+                    const el = hash ? document.getElementById(hash) : null;
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                   setOpen(false);
                 }}
