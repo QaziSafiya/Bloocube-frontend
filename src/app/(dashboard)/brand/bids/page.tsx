@@ -4,6 +4,7 @@ import { campaignService } from '@/lib/campaignService';
 import { authUtils } from '@/lib/auth';
 import type { Bid } from '@/types/bid';
 import { ChevronDownIcon, CheckIcon, EyeIcon, ChatBubbleLeftRightIcon, CalendarIcon, CurrencyDollarIcon, TagIcon } from '@heroicons/react/24/outline';
+import { acceptBidApi, rejectBidApi } from '@/hooks/useBids';
 
 export default function BrandBidsPage() {
   const [bids, setBids] = useState<Bid[]>([]);
@@ -11,6 +12,7 @@ export default function BrandBidsPage() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [processing, setProcessing] = useState<{ id: string; action: 'accept' | 'reject' } | null>(null);
 
   const brandId = useMemo(() => {
     const user = authUtils.getUser?.();
@@ -99,6 +101,41 @@ export default function BrandBidsPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getCampaignIdFromBid = (bid: Bid): string => {
+    const c = bid.campaign_id as unknown as string | { _id?: string };
+    return typeof c === 'string' ? c : (c?._id as string);
+  };
+
+  const onAccept = async (bid: Bid) => {
+    try {
+      setProcessing({ id: bid._id, action: 'accept' });
+      const campaignId = getCampaignIdFromBid(bid);
+      if (!campaignId) throw new Error('Missing campaign id');
+      await acceptBidApi(campaignId, bid._id);
+      setBids(prev => prev.map(b => b._id === bid._id ? { ...b, status: 'accepted' } : b));
+    } catch (e) {
+      console.error('Accept bid failed', e);
+      alert((e as Error)?.message || 'Failed to accept bid');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const onReject = async (bid: Bid) => {
+    try {
+      setProcessing({ id: bid._id, action: 'reject' });
+      const campaignId = getCampaignIdFromBid(bid);
+      if (!campaignId) throw new Error('Missing campaign id');
+      await rejectBidApi(campaignId, bid._id);
+      setBids(prev => prev.map(b => b._id === bid._id ? { ...b, status: 'rejected' } : b));
+    } catch (e) {
+      console.error('Reject bid failed', e);
+      alert((e as Error)?.message || 'Failed to reject bid');
+    } finally {
+      setProcessing(null);
+    }
   };
 
   return (
@@ -213,10 +250,14 @@ export default function BrandBidsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {typeof bid.campaign_id === 'object' ? bid.campaign_id.title : bid.campaign_id}
+                      {typeof bid.campaign_id === 'object' && (bid.campaign_id as any)?.title
+                        ? (bid.campaign_id as any).title
+                        : 'Campaign'}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      by {typeof bid.creator_id === 'object' ? bid.creator_id.name : bid.creator_id}
+                      by {typeof bid.creator_id === 'object' && (bid.creator_id as any)?.name
+                        ? (bid.creator_id as any).name
+                        : 'Creator'}
                     </p>
                   </div>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(bid.status)}`}>
@@ -245,6 +286,31 @@ export default function BrandBidsPage() {
                     </div>
                   )}
 
+                  {/* Creator Social Profiles */}
+                  {typeof bid.creator_id === 'object' && (bid.creator_id as any)?.socialAccounts && (
+                    <div className="p-3 bg-white rounded-lg border border-gray-200">
+                      <div className="text-sm text-gray-500 mb-2">Creator Profiles</div>
+                      <div className="flex flex-wrap gap-2">
+                        {(() => {
+                          const sa = (bid.creator_id as any).socialAccounts as Record<string, any>;
+                          const items: string[] = [];
+                          if (sa.instagram?.username) items.push(`Instagram: @${sa.instagram.username}`);
+                          if (sa.twitter?.username) items.push(`X: @${sa.twitter.username}`);
+                          if (sa.youtube?.customUrl || sa.youtube?.title) items.push(`YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
+                          if (sa.linkedin?.username || sa.linkedin?.name) items.push(`LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
+                          if (sa.facebook?.username || sa.facebook?.name) items.push(`Facebook: ${sa.facebook.username || sa.facebook.name}`);
+                          return items.length
+                            ? items.map((label, idx) => (
+                                <span key={idx} className="inline-flex items-center px-2 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-700">
+                                  {label}
+                                </span>
+                              ))
+                            : <span className="text-xs text-gray-500">No connected profiles</span>;
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <CalendarIcon className="w-5 h-5 text-blue-600" />
@@ -266,10 +332,18 @@ export default function BrandBidsPage() {
                   </button>
                   {bid.status === 'pending' && (
                     <>
-                      <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                      <button
+                        className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-60"
+                        onClick={() => onAccept(bid)}
+                        disabled={!!processing && processing.id === bid._id}
+                      >
                         Accept
                       </button>
-                      <button className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                      <button
+                        className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-60"
+                        onClick={() => onReject(bid)}
+                        disabled={!!processing && processing.id === bid._id}
+                      >
                         Reject
                       </button>
                     </>

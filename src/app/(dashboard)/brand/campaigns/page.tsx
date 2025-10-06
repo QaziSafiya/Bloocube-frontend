@@ -599,6 +599,31 @@ export default function BrandCampaignsPage() {
                           <div className="text-sm text-gray-700 leading-relaxed">
                             {b.proposal_text}
                           </div>
+
+                          {/* Creator Social Profiles */}
+                          {typeof (b as any).creator_id === 'object' && (b as any).creator_id?.socialAccounts && (
+                            <div className="mt-4">
+                              <div className="text-xs text-gray-500 mb-1">Creator Profiles</div>
+                              <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                  const sa = (b as any).creator_id.socialAccounts as Record<string, any>;
+                                  const items: Array<{ label: string; url?: string; handle?: string }> = [];
+                                  if (sa.instagram?.username) items.push({ label: `Instagram: @${sa.instagram.username}` });
+                                  if (sa.twitter?.username) items.push({ label: `X: @${sa.twitter.username}` });
+                                  if (sa.youtube?.customUrl || sa.youtube?.title) items.push({ label: `YouTube: ${sa.youtube.customUrl || sa.youtube.title}` });
+                                  if (sa.linkedin?.username || sa.linkedin?.name) items.push({ label: `LinkedIn: ${sa.linkedin.username || sa.linkedin.name}` });
+                                  if (sa.facebook?.username || sa.facebook?.name) items.push({ label: `Facebook: ${sa.facebook.username || sa.facebook.name}` });
+                                  return items.length
+                                    ? items.map((it, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-2 py-1 bg-white border border-gray-200 rounded-md text-xs text-gray-700">
+                                          {it.label}
+                                        </span>
+                                      ))
+                                    : null;
+                                })()}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="ml-6 flex flex-col gap-2">
                           <button 
