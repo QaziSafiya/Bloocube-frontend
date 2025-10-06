@@ -1,10 +1,3 @@
-substitutions:
-  _REGION: asia-southeast1
-  _SERVICE: bloocube-frontend
-  _REPO: bloocube
-  _IMAGE_TAG: latest
-  _NEXT_PUBLIC_API_URL: https://api-backend.bloocube.com
-
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'  # Optional: Faster builds
@@ -18,9 +11,9 @@ steps:
       - '-f'
       - 'Bloocube-frontend/Dockerfile'
       - '-t'
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/bloocube/bloocube-frontend:latest'
       - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=$_NEXT_PUBLIC_API_URL'
+      - 'NEXT_PUBLIC_API_URL=https://api-backend.bloocube.com'
       - 'Bloocube-frontend'
 
   # Step 2: Push image to Artifact Registry
@@ -29,7 +22,7 @@ steps:
     waitFor: ['build-image']
     args:
       - push
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/bloocube/bloocube-frontend:latest'
 
   # Step 3: Deploy to Cloud Run
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -39,9 +32,9 @@ steps:
     args:
       - run
       - deploy
-      - '$_SERVICE'
-      - '--image=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
-      - '--region=$_REGION'
+      - 'bloocube-frontend'
+      - '--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/bloocube/bloocube-frontend:latest'
+      - '--region=asia-southeast1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=3000'
@@ -50,11 +43,11 @@ steps:
       - '--timeout=300'
       - '--max-instances=10'
       - '--min-instances=0'
-      - '--set-env-vars=NEXT_PUBLIC_API_URL=$_NEXT_PUBLIC_API_URL,NODE_ENV=production'
+      - '--set-env-vars=NEXT_PUBLIC_API_URL=https://api-backend.bloocube.com,NODE_ENV=production'
 
 # Images to be pushed to registry
 images:
-  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$_IMAGE_TAG'
+  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/bloocube/bloocube-frontend:latest'
 
 # Timeout for entire build (increase if needed)
 timeout: '1800s'
