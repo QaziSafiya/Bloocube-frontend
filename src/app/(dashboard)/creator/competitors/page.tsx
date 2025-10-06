@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Search, Filter, TrendingUp, Users, Eye, Heart, MessageCircle, Share2, BarChart3, Target, Zap, Plus, ExternalLink } from 'lucide-react';
+import { Search, Filter, Users, Eye, Heart, MessageCircle, Share2, BarChart3, Target, Zap, Plus, ExternalLink } from 'lucide-react';
 import CreatorLayout from '@/Components/Creater/CreatorLayout';
-import { Menu } from 'lucide-react';
+//
 import { apiRequest } from '@/lib/apiClient';
 import Link from 'next/link';
 
@@ -35,6 +35,50 @@ interface AnalysisHistory {
   status: 'completed' | 'failed' | 'processing';
 }
 
+type AnalysisDoc = {
+  _id?: string;
+  createdAt?: string;
+  ai_metadata?: { generated_at?: string };
+  competitor_analysis?: {
+    competitors?: Array<{
+      platform?: string;
+      username?: string;
+      profile_url?: string;
+      verified?: boolean;
+      key_metrics?: {
+        followers?: number;
+        engagement_rate?: number | string;
+        posts_analyzed?: number;
+      };
+      profile_metrics?: {
+        followers?: number;
+        engagement_rate?: number | string;
+        posts_analyzed?: number;
+      };
+    }>;
+  };
+  data?: {
+    results?: {
+      competitors_data?: Array<{
+        platform?: string;
+        username?: string;
+        profile_url?: string;
+        verified?: boolean;
+        key_metrics?: {
+          followers?: number;
+          engagement_rate?: number | string;
+          posts_analyzed?: number;
+        };
+        profile_metrics?: {
+          followers?: number;
+          engagement_rate?: number | string;
+          posts_analyzed?: number;
+        };
+      }>;
+    };
+  };
+};
+
 const CompetitorAnalysisPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
@@ -43,104 +87,69 @@ const CompetitorAnalysisPage = () => {
   const [loading, setLoading] = useState(true);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [quickPlatform, setQuickPlatform] = useState('instagram');
+  const [quickInput, setQuickInput] = useState('');
+  const [quickLoading, setQuickLoading] = useState(false);
+  const [quickError, setQuickError] = useState<string | null>(null);
 
   // Load competitor data and analysis history
   useEffect(() => {
-    loadCompetitorData();
     loadAnalysisHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadCompetitorData = async () => {
-    // For now, using mock data. In production, this would load from saved competitors
-    const mockCompetitors: Competitor[] = [
-      {
-        id: '1',
-        name: 'TechReviewer Pro',
-        handle: '@techreviewerpro',
-        platform: 'YouTube',
-        followers: 1250000,
-        engagement: 4.2,
-        avgLikes: 45000,
-        avgComments: 3200,
-        avgShares: 1800,
-        recentPosts: 12,
-        growthRate: 8.5,
-        category: 'Technology',
-        verified: true,
-        avatar: '/api/placeholder/60/60',
-        profileUrl: 'https://youtube.com/@techreviewerpro',
-        lastAnalyzed: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: '2',
-        name: 'Fashion Forward',
-        handle: '@fashionforward',
-        platform: 'Instagram',
-        followers: 890000,
-        engagement: 6.8,
-        avgLikes: 52000,
-        avgComments: 4800,
-        avgShares: 2100,
-        recentPosts: 8,
-        growthRate: 12.3,
-        category: 'Fashion',
-        verified: true,
-        avatar: '/api/placeholder/60/60'
-      },
-      {
-        id: '3',
-        name: 'Fitness Guru',
-        handle: '@fitnessguru',
-        platform: 'Instagram',
-        followers: 2100000,
-        engagement: 9.1,
-        avgLikes: 180000,
-        avgComments: 12000,
-        avgShares: 8500,
-        recentPosts: 15,
-        growthRate: 15.7,
-        category: 'Fitness',
-        verified: false,
-        avatar: '/api/placeholder/60/60'
-      },
-      {
-        id: '4',
-        name: 'Foodie Adventures',
-        handle: '@foodieadventures',
-        platform: 'YouTube',
-        followers: 750000,
-        engagement: 5.4,
-        avgLikes: 38000,
-        avgComments: 2900,
-        avgShares: 1600,
-        recentPosts: 6,
-        growthRate: 6.2,
-        category: 'Food',
-        verified: true,
-        avatar: '/api/placeholder/60/60'
-      },
-      {
-        id: '5',
-        name: 'Travel Explorer',
-        handle: '@travelexplorer',
-        platform: 'Instagram',
-        followers: 1450000,
-        engagement: 7.2,
-        avgLikes: 95000,
-        avgComments: 7200,
-        avgShares: 4200,
-        recentPosts: 10,
-        growthRate: 9.8,
-        category: 'Travel',
-        verified: true,
-        avatar: '/api/placeholder/60/60'
+  // Derive competitors from latest analyses
+  const loadCompetitorDataFromAnalyses = async (analyses: AnalysisHistory[]) => {
+    try {
+      setLoading(true);
+      // Limit detail fetches to avoid flooding; take up to latest 5
+      const latest = analyses.slice(0, 5);
+      const detailResponses = await Promise.all(
+        latest.map(a => apiRequest<{ success: boolean; data: Record<string, unknown> }>(`/api/competitor/analysis/${a.id}`))
+      );
+      const items: Competitor[] = [];
+      const seen = new Set<string>();
+      for (const resp of detailResponses) {
+        const d = resp?.data as AnalysisDoc;
+        const compList = d?.competitor_analysis?.competitors || d?.data?.results?.competitors_data || [];
+        for (const c of compList) {
+          const platform = (c.platform || '').toString();
+          const username = (c.username || '').toString();
+          const key = `${platform}:${username}`;
+          if (!username || !platform || seen.has(key)) continue;
+          seen.add(key);
+          const metrics = c.key_metrics || c.profile_metrics || {};
+          const followers = metrics.followers || 0;
+          const engagement = typeof metrics.engagement_rate === 'number' ? metrics.engagement_rate : parseFloat(metrics.engagement_rate || '0');
+          const postsAnalyzed = metrics.posts_analyzed || 0;
+          items.push({
+            id: key,
+            name: username,
+            handle: `@${username}`,
+            platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+            followers,
+            engagement: Number.isFinite(engagement) ? engagement : 0,
+            avgLikes: 0,
+            avgComments: 0,
+            avgShares: 0,
+            recentPosts: postsAnalyzed,
+            growthRate: 0,
+            category: '—',
+            verified: !!c.verified,
+            avatar: '/api/placeholder/60/60',
+            profileUrl: c.profile_url || c.profile_url,
+            lastAnalyzed: d?.createdAt || d?.ai_metadata?.generated_at || undefined,
+            analysisId: d?._id
+          });
+        }
       }
-    ];
-
-    setTimeout(() => {
-      setCompetitors(mockCompetitors);
+      setCompetitors(items);
+    } catch (e) {
+      console.error('Failed to load competitor details:', e);
+      setCompetitors([]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const loadAnalysisHistory = async () => {
@@ -148,10 +157,13 @@ const CompetitorAnalysisPage = () => {
       const response = await apiRequest<{
         success: boolean;
         data: { analyses: AnalysisHistory[] };
-      }>('/api/competitors/history');
+      }>(
+        '/api/competitor/history'
+      );
       
       if (response.success) {
         setAnalysisHistory(response.data.analyses);
+        loadCompetitorDataFromAnalyses(response.data.analyses);
       }
     } catch (error) {
       console.error('Failed to load analysis history:', error);
@@ -174,6 +186,65 @@ const CompetitorAnalysisPage = () => {
       return (num / 1000).toFixed(1) + 'K';
     }
     return num.toString();
+  };
+
+  const buildProfileUrl = (platform: string, input: string): string | null => {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    // If it's already a full URL, return as is
+    try {
+      const url = new URL(trimmed);
+      return url.toString();
+    } catch {}
+    const username = trimmed.replace(/^@/, '');
+    switch (platform) {
+      case 'instagram':
+        return `https://www.instagram.com/${username}`;
+      case 'twitter':
+        return `https://twitter.com/${username}`;
+      case 'youtube':
+        return `https://www.youtube.com/@${username}`;
+      case 'linkedin':
+        return `https://www.linkedin.com/in/${username}`;
+      case 'facebook':
+        return `https://www.facebook.com/${username}`;
+      default:
+        return null;
+    }
+  };
+
+  const startQuickAnalysis = async () => {
+    const profileUrl = buildProfileUrl(quickPlatform, quickInput);
+    if (!profileUrl) {
+      setQuickError('Enter a valid username or full profile URL');
+      return;
+    }
+    setQuickError(null);
+    setQuickLoading(true);
+    try {
+      const resp = await apiRequest<{ success: boolean; data: Record<string, unknown> }>(
+        '/api/competitor/analyze',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            competitorUrls: [profileUrl],
+            analysisType: 'comprehensive',
+            options: { maxPosts: 30, timePeriodDays: 30, includeContentAnalysis: true, includeEngagementAnalysis: true, includeAudienceAnalysis: true, includeCompetitiveInsights: true, includeRecommendations: true }
+          })
+        }
+      );
+      if (resp.success) {
+        // Update list immediately from returned data
+        await loadAnalysisHistory();
+      } else {
+        setQuickError('Analysis failed. Please try again.');
+      }
+    } catch (e: unknown) {
+      const err = e as { message?: string } | undefined;
+      setQuickError(err?.message || 'Analysis failed. Please try again.');
+    } finally {
+      setQuickLoading(false);
+    }
   };
 
   const getEngagementColor = (engagement: number) => {
@@ -228,6 +299,57 @@ const CompetitorAnalysisPage = () => {
         </div>
       </div>
 
+      {/* Quick Analysis Form */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <Search className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Quick Competitor Analysis</h3>
+              <p className="text-sm text-gray-500">Select a platform and enter a profile URL or username</p>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Platform</label>
+            <select 
+              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200" 
+              value={quickPlatform}
+              onChange={(e) => setQuickPlatform(e.target.value)}
+            >
+              <option value="instagram">📸 Instagram</option>
+              <option value="youtube">🎥 YouTube</option>
+              <option value="twitter">🐦 Twitter</option>
+              <option value="linkedin">💼 LinkedIn</option>
+              <option value="facebook">👥 Facebook</option>
+            </select>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Profile URL or Username</label>
+            <input
+              type="text"
+              value={quickInput}
+              onChange={(e) => setQuickInput(e.target.value)}
+              placeholder="e.g. https://instagram.com/creator or @creator"
+              className="w-full border text-black border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:border-gray-400 transition-colors duration-200"
+            />
+            {quickError && <div className="text-sm text-red-600">{quickError}</div>}
+          </div>
+          <div>
+            <button
+              onClick={startQuickAnalysis}
+              disabled={quickLoading}
+              className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300"
+            >
+              {quickLoading ? 'Analyzing…' : 'Analyze Now'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Enhanced Filters Section */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8 hover:shadow-md transition-all duration-200">
         <div className="flex items-center justify-between mb-4">
@@ -258,7 +380,7 @@ const CompetitorAnalysisPage = () => {
               <option value="instagram">📸 Instagram</option>
               <option value="twitter">🐦 Twitter</option>
               <option value="linkedin">💼 LinkedIn</option>
-              <option value="tiktok">🎵 TikTok</option>
+              <option value="facebook">👥 Facebook</option>
             </select>
           </div>
           

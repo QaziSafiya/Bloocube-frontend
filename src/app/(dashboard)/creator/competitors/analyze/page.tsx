@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Plus, X, Search, AlertCircle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import Sidebar from '@/Components/Creater/Sidebar';
 import { apiRequest } from '@/lib/apiClient';
+import { useSearchParams } from 'next/navigation';
 
 interface CompetitorUrl {
   id: string;
@@ -41,6 +42,7 @@ const CompetitorAnalysisPage = () => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   // Add new competitor URL input
   const addCompetitorUrl = () => {
@@ -119,11 +121,30 @@ const CompetitorAnalysisPage = () => {
         return { isValid: false, error: 'Invalid LinkedIn URL format' };
       }
 
+      if (hostname.includes('facebook.com')) {
+        const username = pathname.split('/')[1];
+        return {
+          isValid: !!username,
+          platform: 'Facebook',
+          username: username?.replace('@', ''),
+          error: !username ? 'Invalid Facebook URL format' : undefined
+        };
+      }
+
       return { isValid: false, error: 'Unsupported platform' };
     } catch {
       return { isValid: false, error: 'Invalid URL format' };
     }
   };
+
+  // Prefill from query (url)
+  React.useEffect(() => {
+    const url = searchParams?.get('url');
+    if (url) {
+      setCompetitorUrls([{ id: '1', url, ...validateUrl(url) }]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Start competitor analysis
   const startAnalysis = async () => {
@@ -139,7 +160,7 @@ const CompetitorAnalysisPage = () => {
     setResults(null);
 
     try {
-      const response = await apiRequest<{ success: boolean; data: AnalysisResult }>('/api/competitors/analyze', {
+      const response = await apiRequest<{ success: boolean; data: AnalysisResult }>('/api/competitor/analyze', {
         method: 'POST',
         body: JSON.stringify({
           competitorUrls: validUrls.map(comp => comp.url),
