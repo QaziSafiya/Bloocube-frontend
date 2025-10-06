@@ -15,6 +15,17 @@ import {
 import Link from 'next/link';
 
 export default function BrandDashboard() {
+  const user = authUtils.getUser?.();
+  if (!user || (user.role !== 'brand' && user.role !== 'admin')) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+          <h1 className="text-lg font-semibold text-gray-900 mb-2">Brand access required</h1>
+          <p className="text-sm text-gray-600 mb-4">Please sign in with a brand account to view brand dashboards.</p>
+        </div>
+      </div>
+    );
+  }
   const { data: campaigns, loading: campaignsLoading } = useCampaigns({ limit: 5 });
   const [stats, setStats] = useState({
     totalBids: 0,

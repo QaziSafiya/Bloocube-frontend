@@ -7,6 +7,18 @@ import { ChevronDownIcon, CheckIcon, EyeIcon, ChatBubbleLeftRightIcon, CalendarI
 import { acceptBidApi, rejectBidApi } from '@/hooks/useBids';
 
 export default function BrandBidsPage() {
+  const currentUser = useMemo(() => authUtils.getUser?.(), []);
+  const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  if (!currentUser || (currentUser.role !== 'brand' && currentUser.role !== 'admin')) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+          <h1 className="text-lg font-semibold text-gray-900 mb-2">Brand access required</h1>
+          <p className="text-sm text-gray-600 mb-4">Please sign in with a brand account to review bids.</p>
+        </div>
+      </div>
+    );
+  }
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,19 +298,26 @@ export default function BrandBidsPage() {
                     </div>
                   )}
 
-                  {/* Creator Social Profiles */}
+                  {/* Creator Social Profiles for campaign-selected platforms */}
                   {typeof bid.creator_id === 'object' && (bid.creator_id as any)?.socialAccounts && (
                     <div className="p-3 bg-white rounded-lg border border-gray-200">
                       <div className="text-sm text-gray-500 mb-2">Creator Profiles</div>
                       <div className="flex flex-wrap gap-2">
                         {(() => {
                           const sa = (bid.creator_id as any).socialAccounts as Record<string, any>;
+                          const selectedPlatforms = Array.isArray((bid as any).campaign_id?.requirements?.platforms)
+                            ? (bid as any).campaign_id.requirements.platforms as string[]
+                            : [];
                           const items: string[] = [];
-                          if (sa.instagram?.username) items.push(`Instagram: @${sa.instagram.username}`);
-                          if (sa.twitter?.username) items.push(`X: @${sa.twitter.username}`);
-                          if (sa.youtube?.customUrl || sa.youtube?.title) items.push(`YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
-                          if (sa.linkedin?.username || sa.linkedin?.name) items.push(`LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
-                          if (sa.facebook?.username || sa.facebook?.name) items.push(`Facebook: ${sa.facebook.username || sa.facebook.name}`);
+                          const pushIfSelected = (platform: string, label: string) => {
+                            if (!selectedPlatforms.includes(platform)) return;
+                            items.push(label);
+                          };
+                          if (sa.instagram?.username) pushIfSelected('instagram', `Instagram: @${sa.instagram.username}`);
+                          if (sa.twitter?.username) pushIfSelected('twitter', `X: @${sa.twitter.username}`);
+                          if (sa.youtube?.customUrl || sa.youtube?.title) pushIfSelected('youtube', `YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
+                          if (sa.linkedin?.username || sa.linkedin?.name) pushIfSelected('linkedin', `LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
+                          if (sa.facebook?.username || sa.facebook?.name) pushIfSelected('facebook', `Facebook: ${sa.facebook.username || sa.facebook.name}`);
                           return items.length
                             ? items.map((label, idx) => (
                                 <span key={idx} className="inline-flex items-center px-2 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-700">
@@ -326,7 +345,10 @@ export default function BrandBidsPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <button className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                  <button
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    onClick={() => setSelectedBid(bid)}
+                  >
                     <EyeIcon className="w-4 h-4 inline mr-2" />
                     View Details
                   </button>
@@ -357,6 +379,69 @@ export default function BrandBidsPage() {
           </div>
         )}
 
+        {/* Bid Details Modal */}
+        {!!selectedBid && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Bid Details</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {typeof selectedBid.campaign_id === 'object' && (selectedBid.campaign_id as any)?.title
+                      ? (selectedBid.campaign_id as any).title
+                      : 'Campaign'}
+                    {' '}• Status: {selectedBid.status}
+                  </p>
+                </div>
+                <button 
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setSelectedBid(null)}
+                >
+                  <svg className="h-6 w-6 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm text-gray-500 mb-1">Proposal</div>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{selectedBid.proposal_text}</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm text-gray-500 mb-1">Amount</div>
+                    <div className="text-lg font-semibold text-gray-900">₹{selectedBid.bid_amount.toLocaleString()} {selectedBid.currency}</div>
+                  </div>
+                </div>
+                {typeof selectedBid.creator_id === 'object' && (selectedBid.creator_id as any)?.socialAccounts && (
+                  <div className="p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="text-sm text-gray-500 mb-2">Creator Profiles</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        const sa = (selectedBid.creator_id as any).socialAccounts as Record<string, any>;
+                        const selectedPlatforms = Array.isArray((selectedBid as any).campaign_id?.requirements?.platforms)
+                          ? (selectedBid as any).campaign_id.requirements.platforms as string[]
+                          : [];
+                        const items: string[] = [];
+                        const pushIfSelected = (platform: string, label: string) => { if (selectedPlatforms.includes(platform)) items.push(label); };
+                        if (sa.instagram?.username) pushIfSelected('instagram', `Instagram: @${sa.instagram.username}`);
+                        if (sa.twitter?.username) pushIfSelected('twitter', `X: @${sa.twitter.username}`);
+                        if (sa.youtube?.customUrl || sa.youtube?.title) pushIfSelected('youtube', `YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
+                        if (sa.linkedin?.username || sa.linkedin?.name) pushIfSelected('linkedin', `LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
+                        if (sa.facebook?.username || sa.facebook?.name) pushIfSelected('facebook', `Facebook: ${sa.facebook.username || sa.facebook.name}`);
+                        return items.length
+                          ? items.map((label, idx) => (
+                              <span key={idx} className="inline-flex items-center px-2 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-700">{label}</span>
+                            ))
+                          : <span className="text-xs text-gray-500">No connected profiles</span>;
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Summary Stats */}
         {!loading && !error && bids.length > 0 && (
           <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
