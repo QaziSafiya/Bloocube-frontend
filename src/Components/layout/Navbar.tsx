@@ -10,8 +10,6 @@ import clsx from "clsx";
 const navItems = [
   { href: "#features", label: "Features" },
   { href: "#pricing", label: "Pricing" },
-  { href: "#", label: "Resources" },
-  { href: "#", label: "Product" },
 ];
 
 const Navbar = () => {
@@ -64,6 +62,16 @@ const Navbar = () => {
                   <Link
                     key={item.label}
                     href={item.href}
+                    onClick={(e) => {
+                      if (item.href.startsWith('#')) {
+                        e.preventDefault();
+                        const el = document.querySelector(item.href);
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          setOpen(false);
+                        }
+                      }
+                    }}
                     className="group relative text-zinc-300/90 hover:text-white transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/5"
                   >
                     <span className="font-medium">{item.label}</span>
@@ -110,7 +118,16 @@ const Navbar = () => {
                 key={item.label}
                 href={item.href}
                 className="block text-zinc-300 hover:text-white transition-all duration-300 py-2 px-3 rounded-lg hover:bg-white/5"
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  if (item.href.startsWith('#')) {
+                    e.preventDefault();
+                    const el = document.querySelector(item.href);
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }
+                  setOpen(false);
+                }}
               >
                 {item.label}
               </Link>
