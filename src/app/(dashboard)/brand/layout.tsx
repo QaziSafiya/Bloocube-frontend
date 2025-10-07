@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bell, Briefcase, Home, Settings, Users, Store, BarChart3, User, LogOut, Search, Menu } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
@@ -87,14 +88,15 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
           {/* Logo */}
           <div className="p-8 border-b border-gray-200/30 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-indigo-600/5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
-            <div className="relative z-10 flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl relative">
-                <span className="text-white font-bold text-xl">B</span>
+            <div className="relative z-10 flex items-center justify-center">
+              <div className="relative w-20 h-20">
+                <Image
+                  src="/logo.png"
+                  alt="Bloocube Logo"
+                  fill
+                  className="object-contain p-2"
+                />
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent"></div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Bloocube</h1>
-                <p className="text-sm text-gray-500 font-semibold">Brand Dashboard</p>
               </div>
             </div>
             {/* Decorative elements */}

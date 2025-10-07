@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import Logout from '../Logout';
 import { authUtils } from '@/lib/auth';
 
@@ -133,13 +134,14 @@ const Sidebar = React.memo(() => {
     <div className="fixed left-0 top-0 w-56 h-screen bg-white/95 backdrop-blur-md shadow-2xl border-r border-gray-200/50 flex flex-col z-50">
       {/* Enhanced Logo Section */}
       <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <span className="text-white font-bold text-lg">B</span>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">Bloocube</h1>
-            <p className="text-[11px] text-gray-500 font-medium leading-tight">Creator Platform</p>
+        <div className="flex items-center justify-center">
+          <div className="relative w-24 h-24">
+            <Image
+              src="/logo.png"
+              alt="Bloocube Logo"
+              fill
+              className="object-contain p-1"
+            />
           </div>
         </div>
       </div>
