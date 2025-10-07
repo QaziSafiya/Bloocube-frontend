@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
-import { useCampaigns, createCampaign, updateCampaignApi } from '@/hooks/useCampaigns';
+import { createCampaign, updateCampaignApi } from '@/hooks/useCampaigns';
 import type { Campaign } from '@/types/campaign';
 import { acceptBidApi, rejectBidApi } from '@/hooks/useBids';
 import { campaignService } from '@/lib/campaignService';
 import { authUtils } from '@/lib/auth';
 import { ChevronDownIcon, PlusIcon, EyeIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 type PlatformType = "instagram" | "youtube" | "twitter" | "linkedin" | "facebook";
 
@@ -21,7 +22,24 @@ export default function BrandCampaignsPage() {
       </div>
     );
   }
-  const { data: campaigns, loading, error, refetch } = useCampaigns({ limit: 10 });
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const refetch = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const brandId = currentUser?._id || (currentUser as any)?.id;
+      if (!brandId) throw new Error('Brand not authenticated');
+      const res = await campaignService.listByBrand(String(brandId), { limit: 20 });
+      setCampaigns(res.data.campaigns || []);
+    } catch (e: unknown) {
+      setError((e as Error)?.message || 'Failed to load campaigns');
+      setCampaigns([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [deadlineDate, setDeadlineDate] = useState("");
@@ -41,6 +59,11 @@ export default function BrandCampaignsPage() {
   const [bidsError, setBidsError] = useState<string | null>(null);
   const [bids, setBids] = useState<import('@/types/bid').Bid[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    refetch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -182,9 +205,18 @@ export default function BrandCampaignsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Campaign Management</h1>
-          <p className="mt-2 text-gray-600">Create compelling campaigns and connect with talented creators to bring your brand vision to life</p>
+        <div className="mb-8 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Campaign Management</h1>
+            <p className="mt-2 text-gray-600">Create compelling campaigns and connect with talented creators to bring your brand vision to life</p>
+          </div>
+          <Link
+            href="/brand/marketplace"
+            className="inline-flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-sm hover:shadow-md transition-all duration-200 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700"
+          >
+            <span className="w-2 h-2 rounded-full bg-white/90 animate-pulse"></span>
+            View all campaigns
+          </Link>
         </div>
 
         {/* Create Campaign Form */}

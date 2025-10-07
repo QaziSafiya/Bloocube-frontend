@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { userService, type CreatorUser } from '@/lib/userService';
 import { Search, Filter, Users, Star, MapPin, Eye, MessageCircle, Plus, Zap, ChevronDownIcon, CheckIcon } from 'lucide-react';
+import { useCampaigns } from '@/hooks/useCampaigns';
 
 interface Creator {
   id: string;
@@ -46,6 +47,7 @@ interface Creator {
 export default function BrandMarketplacePage() {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
+  const { data: campaigns } = useCampaigns({ limit: 24 });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -493,6 +495,28 @@ export default function BrandMarketplacePage() {
           ))}
         </div>
       )}
+
+        {/* Campaigns Section */}
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">All Campaigns</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(campaigns || []).map((c: any) => (
+              <div key={c._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{c.title}</h3>
+                  <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{c.status}</span>
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3">{c.description}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700 font-medium">₹{Number(c.budget || 0).toLocaleString()}</span>
+                  <span className="text-gray-500">{c.deadline ? new Date(c.deadline).toLocaleDateString() : ''}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Empty State */}
         {!loading && sortedCreators.length === 0 && (
