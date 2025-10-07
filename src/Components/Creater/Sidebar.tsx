@@ -20,6 +20,7 @@ const sidebarItems = [
   { name: 'Posts', icon: FileText, href: '/creator/posts' },
   { name: 'Analytics', icon: BarChart3, href: '/creator/analytics' },
   { name: 'Marketplace', icon: Store, href: '/creator/marketplace' },
+  { name: 'Bids', icon: FileText, href: '/creator/bids' },
   { name: 'Competitors', icon: Users, href: '/creator/competitors' },
   { name: 'Settings', icon: Settings, href: '/creator/settings' },
 ];

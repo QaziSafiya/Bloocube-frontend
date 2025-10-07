@@ -15,6 +15,17 @@ import {
 import Link from 'next/link';
 
 export default function BrandDashboard() {
+  const user = authUtils.getUser?.();
+  if (!user || (user.role !== 'brand' && user.role !== 'admin')) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+          <h1 className="text-lg font-semibold text-gray-900 mb-2">Brand access required</h1>
+          <p className="text-sm text-gray-600 mb-4">Please sign in with a brand account to view brand dashboards.</p>
+        </div>
+      </div>
+    );
+  }
   const { data: campaigns, loading: campaignsLoading } = useCampaigns({ limit: 5 });
   const [stats, setStats] = useState({
     totalBids: 0,
@@ -32,7 +43,8 @@ export default function BrandDashboard() {
       
       try {
         setLoading(true);
-        const res = await campaignService.listByBrand(brandId as string, { limit: 100 });
+        // Reduce initial load to improve responsiveness
+        const res = await campaignService.listByBrand(brandId as string, { limit: 20 });
         const campaigns = res.data.campaigns || [];
         
         if (campaigns.length === 0) {
@@ -40,26 +52,27 @@ export default function BrandDashboard() {
           return;
         }
 
-        const results = await Promise.allSettled(
-          campaigns.map(c => campaignService.listBids(c._id as string))
-        );
-
-        let totalBids = 0;
-        let pendingBids = 0;
-        let acceptedBids = 0;
-        let totalSpent = 0;
-
-        results.forEach(r => {
-          if (r.status === 'fulfilled') {
-            const bids = r.value.data?.bids || [];
-            totalBids += bids.length;
-            pendingBids += bids.filter(b => b.status === 'pending').length;
-            acceptedBids += bids.filter(b => b.status === 'accepted').length;
-            totalSpent += bids.filter(b => b.status === 'accepted').reduce((sum, b) => sum + b.bid_amount, 0);
+        // Concurrency-limited aggregation to avoid blocking the main thread
+        const concurrency = 4;
+        const queue = [...campaigns];
+        const totals = { totalBids: 0, pendingBids: 0, acceptedBids: 0, totalSpent: 0 };
+        async function worker() {
+          while (queue.length) {
+            const c = queue.shift();
+            if (!c) break;
+            try {
+              const r = await campaignService.listBids(c._id as string);
+              const bids = r.data?.bids || [];
+              totals.totalBids += bids.length;
+              totals.pendingBids += bids.filter(b => b.status === 'pending').length;
+              totals.acceptedBids += bids.filter(b => b.status === 'accepted').length;
+              totals.totalSpent += bids.filter(b => b.status === 'accepted').reduce((sum, b) => sum + b.bid_amount, 0);
+            } catch {}
           }
-        });
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, campaigns.length) }, () => worker()));
 
-        setStats({ totalBids, pendingBids, acceptedBids, totalSpent });
+        setStats(totals);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
       } finally {

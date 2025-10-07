@@ -10,6 +10,17 @@ import { ChevronDownIcon, PlusIcon, EyeIcon, XMarkIcon, CheckIcon } from '@heroi
 type PlatformType = "instagram" | "youtube" | "twitter" | "linkedin" | "facebook";
 
 export default function BrandCampaignsPage() {
+  const currentUser = authUtils.getUser?.();
+  if (!currentUser || (currentUser.role !== 'brand' && currentUser.role !== 'admin')) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+          <h1 className="text-lg font-semibold text-gray-900 mb-2">Brand access required</h1>
+          <p className="text-sm text-gray-600 mb-4">Please sign in with a brand account to manage campaigns.</p>
+        </div>
+      </div>
+    );
+  }
   const { data: campaigns, loading, error, refetch } = useCampaigns({ limit: 10 });
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -582,11 +593,23 @@ export default function BrandCampaignsPage() {
               )}
               
               {!bidsLoading && !bidsError && bids.length > 0 && (
-                <div className="space-y-4">
+                    <div className="space-y-4">
                   {bids.map(b => (
                     <div key={b._id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
+                          {/* Creator identity */}
+                          <div className="mb-2 text-sm text-gray-500">
+                            {(() => {
+                              const creator = (b as any).creator_id as any;
+                              const name = creator && typeof creator === 'object' ? (creator.name || creator.email || '') : '';
+                              const handle = creator?.socialAccounts?.instagram?.username || creator?.socialAccounts?.twitter?.username || '';
+                              if (name && handle) return `${name} • @${handle}`;
+                              if (name) return String(name);
+                              if (handle) return `@${handle}`;
+                              return 'Creator';
+                            })()}
+                          </div>
                           <div className="flex items-center gap-3 mb-3">
                             <div className="text-2xl font-bold text-gray-900">
                               ₹{b.bid_amount.toLocaleString()}
@@ -599,6 +622,38 @@ export default function BrandCampaignsPage() {
                           <div className="text-sm text-gray-700 leading-relaxed">
                             {b.proposal_text}
                           </div>
+
+                          {/* Creator Social Profiles for campaign-selected platforms */}
+                          {typeof (b as any).creator_id === 'object' && (b as any).creator_id?.socialAccounts && (
+                            <div className="mt-4">
+                              <div className="text-xs text-gray-500 mb-1">Creator Profiles</div>
+                              <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                  const sa = (b as any).creator_id.socialAccounts as Record<string, any>;
+                                  const selectedPlatforms = Array.isArray((b as any).campaign_id?.requirements?.platforms)
+                                    ? (b as any).campaign_id.requirements.platforms as string[]
+                                    : [];
+                                  const items: Array<{ label: string; url?: string; handle?: string }> = [];
+                                  const pushIfSelected = (platform: string, label: string) => {
+                                    if (!selectedPlatforms.includes(platform)) return;
+                                    items.push({ label });
+                                  };
+                                  if (sa.instagram?.username) pushIfSelected('instagram', `Instagram: @${sa.instagram.username}`);
+                                  if (sa.twitter?.username) pushIfSelected('twitter', `X: @${sa.twitter.username}`);
+                                  if (sa.youtube?.customUrl || sa.youtube?.title) pushIfSelected('youtube', `YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
+                                  if (sa.linkedin?.username || sa.linkedin?.name) pushIfSelected('linkedin', `LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
+                                  if (sa.facebook?.username || sa.facebook?.name) pushIfSelected('facebook', `Facebook: ${sa.facebook.username || sa.facebook.name}`);
+                                  return items.length
+                                    ? items.map((it, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-2 py-1 bg-white border border-gray-200 rounded-md text-xs text-gray-700">
+                                          {it.label}
+                                        </span>
+                                      ))
+                                    : null;
+                                })()}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="ml-6 flex flex-col gap-2">
                           <button 

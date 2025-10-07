@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { Suspense, useCallback, useState } from 'react';
 import { Plus, X, Search, AlertCircle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import Sidebar from '@/Components/Creater/Sidebar';
 import { apiRequest } from '@/lib/apiClient';
@@ -33,6 +33,16 @@ interface AnalysisResult {
   };
 }
 
+// Suspense-wrapped reader of search params
+const PrefillFromQuery = ({ onPrefill }: { onPrefill: (url: string) => void }) => {
+  const searchParams = useSearchParams();
+  React.useEffect(() => {
+    const url = searchParams?.get('url');
+    if (url) onPrefill(url);
+  }, [searchParams, onPrefill]);
+  return null;
+};
+
 const CompetitorAnalysisPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [competitorUrls, setCompetitorUrls] = useState<CompetitorUrl[]>([
@@ -42,7 +52,7 @@ const CompetitorAnalysisPage = () => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
+  // Avoid calling useSearchParams in this component; use child wrapped in Suspense instead
 
   // Add new competitor URL input
   const addCompetitorUrl = () => {
@@ -137,13 +147,8 @@ const CompetitorAnalysisPage = () => {
     }
   };
 
-  // Prefill from query (url)
-  React.useEffect(() => {
-    const url = searchParams?.get('url');
-    if (url) {
-      setCompetitorUrls([{ id: '1', url, ...validateUrl(url) }]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const onPrefill = useCallback((url: string) => {
+    setCompetitorUrls([{ id: '1', url, ...validateUrl(url) }]);
   }, []);
 
   // Start competitor analysis
@@ -189,7 +194,7 @@ const CompetitorAnalysisPage = () => {
     }
   };
 
-  return (
+  const content = (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
@@ -217,6 +222,11 @@ const CompetitorAnalysisPage = () => {
                 Analyze your competitors' social media strategies and get AI-powered insights
               </p>
             </div>
+
+            {/* Suspense search params prefill */}
+            <Suspense fallback={null}>
+              <PrefillFromQuery onPrefill={onPrefill} />
+            </Suspense>
 
             {!results ? (
               /* Analysis Setup Form */
@@ -464,6 +474,8 @@ const CompetitorAnalysisPage = () => {
       </div>
     </div>
   );
+
+  return <Suspense fallback={<div className="p-6">Loading…</div>}>{content}</Suspense>;
 };
 
 export default CompetitorAnalysisPage;

@@ -4,13 +4,27 @@ import { campaignService } from '@/lib/campaignService';
 import { authUtils } from '@/lib/auth';
 import type { Bid } from '@/types/bid';
 import { ChevronDownIcon, CheckIcon, EyeIcon, ChatBubbleLeftRightIcon, CalendarIcon, CurrencyDollarIcon, TagIcon } from '@heroicons/react/24/outline';
+import { acceptBidApi, rejectBidApi } from '@/hooks/useBids';
 
 export default function BrandBidsPage() {
+  const currentUser = useMemo(() => authUtils.getUser?.(), []);
+  const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  if (!currentUser || (currentUser.role !== 'brand' && currentUser.role !== 'admin')) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+          <h1 className="text-lg font-semibold text-gray-900 mb-2">Brand access required</h1>
+          <p className="text-sm text-gray-600 mb-4">Please sign in with a brand account to review bids.</p>
+        </div>
+      </div>
+    );
+  }
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [processing, setProcessing] = useState<{ id: string; action: 'accept' | 'reject' } | null>(null);
 
   const brandId = useMemo(() => {
     const user = authUtils.getUser?.();
@@ -27,24 +41,35 @@ export default function BrandBidsPage() {
           setError('Login required');
           return;
         }
-        const res = await campaignService.listByBrand(brandId as string, { limit: 50 });
+        // Limit number of campaigns to avoid N+1 overload
+        const res = await campaignService.listByBrand(brandId as string, { limit: 20 });
         const campaigns = res.data.campaigns || [];
         if (campaigns.length === 0) {
           setBids([]);
           return;
         }
-        const results = await Promise.allSettled(
-          campaigns.map(c => status
-            ? campaignService.listBids(c._id as string, { status })
-            : campaignService.listBids(c._id as string)
-          )
-        );
-        const allBids: Bid[] = [];
-        results.forEach(r => {
-          if (r.status === 'fulfilled') {
-            allBids.push(...(r.value.data?.bids || []));
+        // Concurrency-limited fetching to reduce main-thread blocking
+        const concurrency = 4;
+        const queue = [...campaigns];
+        const collected: Bid[] = [];
+        async function worker() {
+          while (queue.length) {
+            const c = queue.shift();
+            if (!c) break;
+            try {
+              const r = await (status
+                ? campaignService.listBids(c._id as string, { status })
+                : campaignService.listBids(c._id as string)
+              );
+              const list = r.data?.bids || [];
+              if (!cancelled && list.length) collected.push(...list);
+            } catch (e) {
+              // ignore per-campaign errors to keep UI responsive
+            }
           }
-        });
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, campaigns.length) }, () => worker()));
+        const allBids = collected;
         if (!cancelled) setBids(allBids);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load bids');
@@ -99,6 +124,41 @@ export default function BrandBidsPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getCampaignIdFromBid = (bid: Bid): string => {
+    const c = bid.campaign_id as unknown as string | { _id?: string };
+    return typeof c === 'string' ? c : (c?._id as string);
+  };
+
+  const onAccept = async (bid: Bid) => {
+    try {
+      setProcessing({ id: bid._id, action: 'accept' });
+      const campaignId = getCampaignIdFromBid(bid);
+      if (!campaignId) throw new Error('Missing campaign id');
+      await acceptBidApi(campaignId, bid._id);
+      setBids(prev => prev.map(b => b._id === bid._id ? { ...b, status: 'accepted' } : b));
+    } catch (e) {
+      console.error('Accept bid failed', e);
+      alert((e as Error)?.message || 'Failed to accept bid');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const onReject = async (bid: Bid) => {
+    try {
+      setProcessing({ id: bid._id, action: 'reject' });
+      const campaignId = getCampaignIdFromBid(bid);
+      if (!campaignId) throw new Error('Missing campaign id');
+      await rejectBidApi(campaignId, bid._id);
+      setBids(prev => prev.map(b => b._id === bid._id ? { ...b, status: 'rejected' } : b));
+    } catch (e) {
+      console.error('Reject bid failed', e);
+      alert((e as Error)?.message || 'Failed to reject bid');
+    } finally {
+      setProcessing(null);
+    }
   };
 
   return (
@@ -213,10 +273,20 @@ export default function BrandBidsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {typeof bid.campaign_id === 'object' ? bid.campaign_id.title : bid.campaign_id}
+                      {typeof bid.campaign_id === 'object' && (bid.campaign_id as any)?.title
+                        ? (bid.campaign_id as any).title
+                        : 'Campaign'}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      by {typeof bid.creator_id === 'object' ? bid.creator_id.name : bid.creator_id}
+                      {(() => {
+                        const creator = (bid.creator_id as any);
+                        const name = creator && typeof creator === 'object' ? (creator.name || creator.email || '') : '';
+                        const handle = creator?.socialAccounts?.instagram?.username || creator?.socialAccounts?.twitter?.username || '';
+                        if (name && handle) return `by ${name} • @${handle}`;
+                        if (name) return `by ${name}`;
+                        if (handle) return `@${handle}`;
+                        return 'by Creator';
+                      })()}
                     </p>
                   </div>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(bid.status)}`}>
@@ -245,6 +315,38 @@ export default function BrandBidsPage() {
                     </div>
                   )}
 
+                  {/* Creator Social Profiles for campaign-selected platforms */}
+                  {typeof bid.creator_id === 'object' && (bid.creator_id as any)?.socialAccounts && (
+                    <div className="p-3 bg-white rounded-lg border border-gray-200">
+                      <div className="text-sm text-gray-500 mb-2">Creator Profiles</div>
+                      <div className="flex flex-wrap gap-2">
+                        {(() => {
+                          const sa = (bid.creator_id as any).socialAccounts as Record<string, any>;
+                          const selectedPlatforms = Array.isArray((bid as any).campaign_id?.requirements?.platforms)
+                            ? (bid as any).campaign_id.requirements.platforms as string[]
+                            : [];
+                          const items: string[] = [];
+                          const pushIfSelected = (platform: string, label: string) => {
+                            if (!selectedPlatforms.includes(platform)) return;
+                            items.push(label);
+                          };
+                          if (sa.instagram?.username) pushIfSelected('instagram', `Instagram: @${sa.instagram.username}`);
+                          if (sa.twitter?.username) pushIfSelected('twitter', `X: @${sa.twitter.username}`);
+                          if (sa.youtube?.customUrl || sa.youtube?.title) pushIfSelected('youtube', `YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
+                          if (sa.linkedin?.username || sa.linkedin?.name) pushIfSelected('linkedin', `LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
+                          if (sa.facebook?.username || sa.facebook?.name) pushIfSelected('facebook', `Facebook: ${sa.facebook.username || sa.facebook.name}`);
+                          return items.length
+                            ? items.map((label, idx) => (
+                                <span key={idx} className="inline-flex items-center px-2 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-700">
+                                  {label}
+                                </span>
+                              ))
+                            : <span className="text-xs text-gray-500">No connected profiles</span>;
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <CalendarIcon className="w-5 h-5 text-blue-600" />
@@ -260,16 +362,27 @@ export default function BrandBidsPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <button className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                  <button
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    onClick={() => setSelectedBid(bid)}
+                  >
                     <EyeIcon className="w-4 h-4 inline mr-2" />
                     View Details
                   </button>
                   {bid.status === 'pending' && (
                     <>
-                      <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                      <button
+                        className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-60"
+                        onClick={() => onAccept(bid)}
+                        disabled={!!processing && processing.id === bid._id}
+                      >
                         Accept
                       </button>
-                      <button className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                      <button
+                        className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-60"
+                        onClick={() => onReject(bid)}
+                        disabled={!!processing && processing.id === bid._id}
+                      >
                         Reject
                       </button>
                     </>
@@ -283,6 +396,69 @@ export default function BrandBidsPage() {
           </div>
         )}
 
+        {/* Bid Details Modal */}
+        {!!selectedBid && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Bid Details</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {typeof selectedBid.campaign_id === 'object' && (selectedBid.campaign_id as any)?.title
+                      ? (selectedBid.campaign_id as any).title
+                      : 'Campaign'}
+                    {' '}• Status: {selectedBid.status}
+                  </p>
+                </div>
+                <button 
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setSelectedBid(null)}
+                >
+                  <svg className="h-6 w-6 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm text-gray-500 mb-1">Proposal</div>
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{selectedBid.proposal_text}</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm text-gray-500 mb-1">Amount</div>
+                    <div className="text-lg font-semibold text-gray-900">₹{selectedBid.bid_amount.toLocaleString()} {selectedBid.currency}</div>
+                  </div>
+                </div>
+                {typeof selectedBid.creator_id === 'object' && (selectedBid.creator_id as any)?.socialAccounts && (
+                  <div className="p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="text-sm text-gray-500 mb-2">Creator Profiles</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        const sa = (selectedBid.creator_id as any).socialAccounts as Record<string, any>;
+                        const selectedPlatforms = Array.isArray((selectedBid as any).campaign_id?.requirements?.platforms)
+                          ? (selectedBid as any).campaign_id.requirements.platforms as string[]
+                          : [];
+                        const items: string[] = [];
+                        const pushIfSelected = (platform: string, label: string) => { if (selectedPlatforms.includes(platform)) items.push(label); };
+                        if (sa.instagram?.username) pushIfSelected('instagram', `Instagram: @${sa.instagram.username}`);
+                        if (sa.twitter?.username) pushIfSelected('twitter', `X: @${sa.twitter.username}`);
+                        if (sa.youtube?.customUrl || sa.youtube?.title) pushIfSelected('youtube', `YouTube: ${sa.youtube.customUrl || sa.youtube.title}`);
+                        if (sa.linkedin?.username || sa.linkedin?.name) pushIfSelected('linkedin', `LinkedIn: ${sa.linkedin.username || sa.linkedin.name}`);
+                        if (sa.facebook?.username || sa.facebook?.name) pushIfSelected('facebook', `Facebook: ${sa.facebook.username || sa.facebook.name}`);
+                        return items.length
+                          ? items.map((label, idx) => (
+                              <span key={idx} className="inline-flex items-center px-2 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-700">{label}</span>
+                            ))
+                          : <span className="text-xs text-gray-500">No connected profiles</span>;
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Summary Stats */}
         {!loading && !error && bids.length > 0 && (
           <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
