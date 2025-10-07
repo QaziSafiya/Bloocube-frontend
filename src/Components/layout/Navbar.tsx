@@ -41,7 +41,7 @@ const Navbar = () => {
           
           {/* Content */}
           <div className="relative z-10">
-            <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6">
+             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
               <div className="flex h-14 md:h-16 items-center justify-between">
               {/* Logo */}
               <Link href="/" className="group">
