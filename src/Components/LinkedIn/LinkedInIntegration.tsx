@@ -11,8 +11,7 @@ export interface LinkedInIntegrationRef {
 }
 
 export const LinkedInIntegration = forwardRef<LinkedInIntegrationRef, LinkedInIntegrationProps>(({ className = '' }, ref) => {
-  const { connect, loading, error } = useLinkedIn();
-  const [isConnected, setIsConnected] = useState(false);
+  const { connect, getProfile, disconnect, isConnected, profile, loading, error } = useLinkedIn();
   const [connectionStatus, setConnectionStatus] = useState('Checking...');
 
   // Check connection status on mount
@@ -21,19 +20,11 @@ export const LinkedInIntegration = forwardRef<LinkedInIntegrationRef, LinkedInIn
   }, []);
 
   const checkConnectionStatus = async () => {
-    try {
-      // Check if LinkedIn data exists in localStorage or make API call
-      const linkedInData = localStorage.getItem('linkedin_data');
-      if (linkedInData) {
-        const data = JSON.parse(linkedInData);
-        setIsConnected(true);
-        setConnectionStatus(`Connected as ${data.firstName} ${data.lastName}`);
-      } else {
-        setIsConnected(false);
-        setConnectionStatus('Not connected');
-      }
-    } catch {
-      setIsConnected(false);
+    const res = await getProfile();
+    if ((res as any)?.success && (res as any).profile) {
+      const p = (res as any).profile as { firstName?: string; lastName?: string; name?: string };
+      setConnectionStatus(`Connected as ${p.name || `${p.firstName || ''} ${p.lastName || ''}`}`.trim());
+    } else {
       setConnectionStatus('Not connected');
     }
   };
@@ -68,12 +59,21 @@ export const LinkedInIntegration = forwardRef<LinkedInIntegrationRef, LinkedInIn
 
       <div className="flex items-center space-x-2">
         {isConnected ? (
-          <button
-            onClick={checkConnectionStatus}
-            className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200 transition-colors"
-          >
-            Refresh
-          </button>
+          <>
+            <button
+              onClick={checkConnectionStatus}
+              className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200 transition-colors"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={async () => { await disconnect(); setConnectionStatus('Not connected'); }}
+              disabled={loading}
+              className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Disconnecting...' : 'Disconnect'}
+            </button>
+          </>
         ) : (
           <button
             onClick={handleConnect}

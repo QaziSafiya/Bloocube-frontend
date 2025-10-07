@@ -1,26 +1,48 @@
 "use client";
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import Button from "@/Components/ui/Button";
-import { apiRequest } from "@/lib/apiClient";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-// import { config } from "@/lib/config"; // Unused import
 
-// Use centralized API client to avoid bad base URL concatenation
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/Components/ui/Alert";
+import Button from "@/Components/ui/Button";
+import { Input } from "@/Components/ui/Input";
+import { Label } from "@/Components/ui/Label";
+import { Checkbox } from "@/Components/ui/Checkbox";
+import { apiRequest } from "@/lib/apiClient";
+
+interface LoginResponse {
+  success: boolean;
+  data: {
+    tokens: { accessToken: string; refreshToken?: string };
+    user: { role: string };
+  };
+  message?: string;
+}
+
+interface GoogleAuthResponse {
+  success: boolean;
+  authURL?: string;
+  state?: string;
+  message?: string;
+  error?: string;
+}
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ✅ Handles login submission with real API
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setError(null);
 
-    // Simple validation
     if (!email || !password) {
       setError("Please enter both email and password");
       return;
@@ -33,192 +55,219 @@ const LoginPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const data = await apiRequest<{ success: boolean; data: { tokens: { accessToken: string; refreshToken?: string }; user: { role: string } }; message?: string }>(
-        '/api/auth/login',
-        {
-          method: 'POST',
-          body: JSON.stringify({ email, password }),
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-
-      // Store tokens for authenticated API calls and refresh flow
-      localStorage.setItem("token", data.data.tokens.accessToken);
-      if (data.data.tokens.refreshToken) {
-        localStorage.setItem("refreshToken", data.data.tokens.refreshToken);
-      }
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-      
-      // Clear auth cache to ensure fresh token is used
-      const { authUtils } = await import('@/lib/auth');
-      authUtils.clearCache();
-      
-      console.log('🔑 Login successful - Token stored:', {
-        hasToken: !!data.data.tokens.accessToken,
-        tokenLength: data.data.tokens.accessToken?.length || 0,
-        user: data.data.user
+      const data = await apiRequest<LoginResponse>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
       });
-      
+
+      localStorage.setItem("token", data.data.tokens.accessToken);
+      if (data.data.tokens.refreshToken)
+        localStorage.setItem("refreshToken", data.data.tokens.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      const { authUtils } = await import("@/lib/auth");
+      authUtils.clearCache();
 
       const role = data.data.user?.role;
-      if (role === 'brand') {
-        router.push('/brand');
-      } else {
-        router.push('/creator');
-      }
+      router.push(role === "brand" ? "/brand" : "/creator");
     } catch (err: unknown) {
       const apiErr = err as { status?: number; retryAfter?: number; message?: string };
-      if (apiErr && apiErr.status === 429) {
-        const retryAfter = typeof apiErr.retryAfter === 'number' ? apiErr.retryAfter : undefined;
-        setError(retryAfter ? `Too many attempts. Try again in ${retryAfter}s.` : 'Too many attempts. Please wait and try again.');
-      } else if (apiErr && typeof apiErr.message === 'string') {
-        setError(apiErr.message || 'Network error. Please try again later.');
-      } else {
-        setError('Network error. Please try again later.');
-      }
-      console.error("Login error:", apiErr);
+      if (apiErr?.status === 429) {
+        const retryAfter = apiErr.retryAfter ? `${apiErr.retryAfter}s` : "";
+        setError(`Too many attempts. Try again in ${retryAfter}`);
+      } else setError(apiErr?.message || "Network error. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ✅ Handles Google login redirect
   const handleGoogle = async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!token) {
-        localStorage.setItem('token', 'guest');
-      }
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (!token) localStorage.setItem("token", "guest");
+
       const callbackUrl = `${window.location.origin}/auth/google/callback`;
-      const data = await apiRequest<{ success: boolean; authURL?: string; state?: string; message?: string; error?: string }>(
-        '/api/google/auth-url',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || 'guest'}` },
-          body: JSON.stringify({ redirectUri: callbackUrl })
-        }
-      );
-      if (!data.success || !data.authURL) {
-        setError(data.message || data.error || 'Failed to start Google auth');
-        return;
-      }
-      localStorage.setItem('google_state', data.state || '');
+      const data = await apiRequest<GoogleAuthResponse>("/api/google/auth-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || "guest"}`,
+        },
+        body: JSON.stringify({ redirectUri: callbackUrl }),
+      });
+
+      if (!data.success || !data.authURL)
+        return setError(data.message || data.error || "Failed to start Google auth");
+
+      localStorage.setItem("google_state", data.state || "");
       window.location.href = data.authURL;
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : 'Failed to start Google auth';
-      setError(errorMessage);
+      const message = e instanceof Error ? e.message : "Failed to start Google auth";
+      setError(message);
     }
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-6 sm:px-8 md:px-12">
-        <div className="w-full max-w-7xl flex items-stretch gap-8 md:gap-12">
-          {/* Left Side - Banner Section */}
-          <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center pr-8 xl:pr-16">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="max-w-lg"
-          >
-            <h1 className="text-4xl xl:text-5xl font-bold mb-6 bg-gradient-to-r from-indigo-300 via-purple-300 to-sky-300 bg-clip-text text-transparent">
-              Welcome Back to BlooCube
-            </h1>
-            <p className="text-xl text-zinc-300 mb-8 leading-relaxed">
-              Your AI-powered social media workspace is waiting. Manage campaigns, connect with creators, and scale your brand.
-            </p>
-            
-            {/* Feature highlights */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">🤖</span>
-                </div>
-                <span className="text-zinc-300">AI-powered content creation</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">📊</span>
-                </div>
-                <span className="text-zinc-300">Advanced analytics & insights</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-orange-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">🚀</span>
-                </div>
-                <span className="text-zinc-300">Creator marketplace access</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+    <section className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#050510] via-[#0f0520] to-[#1b0635] px-4 py-16">
+      {/* Background glow effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse" />
+        <div
+          className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "0.5s" }}
+        />
+      </div>
 
-          {/* Right Side - Login Form */}
-          <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center lg:pl-12 xl:pl-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="w-full max-w-md bg-black/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 text-white border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
-          >
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Login to Your Account</h2>
-              <p className="text-zinc-400">Welcome back! Please sign in to continue</p>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                />
-              </div>
-              <Button type="submit" size="md" disabled={isSubmitting} className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
-                {isSubmitting ? 'Signing in...' : 'Sign In'}
-              </Button>
-            </form>
-            
-            {error && <p className="text-red-400 mt-4 text-sm text-center">{error}</p>}
-            
-            <div className="mt-6 flex justify-between text-sm text-white/70">
-              <Link href="/forgot-password" className="hover:text-white transition-colors">
-                Forgot Password?
-              </Link>
-              <Link href="/signup" className="hover:text-white transition-colors">
-                Create Account
-              </Link>
-            </div>
-            
-            <div className="mt-6">
+      {/* Grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_0_40px_rgba(99,102,241,0.25)] p-8 sm:p-10">
+          <div className="absolute -top-2 -left-2 w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-500 rounded-tl-3xl blur-2xl opacity-50" />
+          <div className="absolute -bottom-2 -right-2 w-24 h-24 bg-gradient-to-tl from-pink-500 to-cyan-500 rounded-br-3xl blur-2xl opacity-50" />
+
+          {/* Header */}
+          <div className="text-center mb-6">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+              Login
+            </h2>
+            <p className="text-gray-400 text-sm mt-3">Sign in to continue to your account</p>
+          </div>
+
+          {/* Form */}
+          <div className="space-y-4">
+            {/* Email */}
+            <div>
+              <Label htmlFor="email" className="text-gray-300 text-sm mb-2 block">
+                Email Address
+              </Label>
               <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/10" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-black/80 text-zinc-400">Or continue with</span>
-                </div>
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                  className="pl-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                />
               </div>
-              <button 
-                onClick={handleGoogle} 
-                className="w-full mt-4 bg-white text-black rounded-xl py-3 font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
-              >
-                <span>🔍</span>
-                Continue with Google
-              </button>
             </div>
-          </motion.div>
+
+            {/* Password */}
+            <div>
+              <Label htmlFor="password" className="text-gray-300 text-sm mb-2 block">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember me */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked: boolean) => setRememberMe(Boolean(checked))}
+                  className="border-white/20 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                />
+                <label htmlFor="remember" className="text-sm text-gray-300 cursor-pointer">
+                  Remember me
+                </label>
+              </div>
+              <a href="/forgot-password" className="text-sm text-indigo-400 hover:text-indigo-300">
+                Forgot password?
+              </a>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <Alert className="bg-red-500/10 border-red-500/20 rounded-xl">
+                <AlertDescription className="text-red-400 text-sm">{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Submit button */}
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full h-11 bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all duration-300"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>Sign In</span>
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+              )}
+            </Button>
+
+            {/* Google Login */}
+            <button
+              onClick={handleGoogle}
+              className="mt-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all duration-300 hover:scale-105 w-full"
+            >
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 48 48"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#FFC107"
+                  d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36C16.8 36 11 30.2 11 23S16.8 10 24 10c3.2 0 6.1 1.2 8.3 3.2l5.7-5.7C34.6 4.2 29.6 2 24 2C11.8 2 2 11.8 2 24s9.8 22 22 22c12.1 0 21.6-8.8 21.6-22 0-1.2-.1-2.3-.3-3.5z"
+                />
+                <path
+                  fill="#4CAF50"
+                  d="M24 46c5.2 0 10-1.9 13.6-5.2l-6.3-5.2C29.1 37.2 26.7 38 24 38c-5.3 0-9.7-3.1-11.5-7.6l-6.6 5.1C7.5 40.8 15 46 24 46z"
+                />
+              </svg>
+              <span className="text-sm font-medium">Login with Google</span>
+            </button>
+
+            {/* Sign up */}
+            <p className="mt-4 text-center text-gray-400 text-sm">
+              Don’t have an account?{" "}
+              <a href="/signup" className="text-indigo-400 hover:text-indigo-300 font-semibold">
+                Sign up for free
+              </a>
+            </p>
           </div>
         </div>
+      </motion.div>
     </section>
   );
 };

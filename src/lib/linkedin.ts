@@ -21,38 +21,40 @@ export interface LinkedInProfileResponse {
   error?: string;
 }
 
+import { apiRequest } from '@/lib/apiClient';
+import { getApiBase } from '@/lib/config';
+
 class LinkedInService {
   private readonly baseURL: string;
 
   constructor() {
-    // Use relative URLs for Next.js API routes
-    this.baseURL = '';
+    this.baseURL = getApiBase();
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || error.message || 'Request failed');
-    }
-    return response.json();
+    return apiRequest<T>(endpoint, options);
   }
 
   async generateAuthURL(redirectUri: string): Promise<LinkedInAuthResponse> {
-    return this.request<LinkedInAuthResponse>('/api/linkedin/auth-url', {
-      method: 'POST',
-      body: JSON.stringify({ redirectUri })
-    });
+    try {
+      const url = `/api/linkedin/auth-url?redirectUri=${encodeURIComponent(redirectUri)}`;
+      return await this.request<LinkedInAuthResponse>(url, { method: 'GET' });
+    } catch {
+      return this.request<LinkedInAuthResponse>('/api/linkedin/auth-url', {
+        method: 'POST',
+        body: JSON.stringify({ redirectUri })
+      });
+    }
   }
 
   async getProfile(): Promise<LinkedInProfileResponse> {
     return this.request<LinkedInProfileResponse>('/api/linkedin/profile');
+  }
+
+  async disconnect(): Promise<{ success: boolean; message?: string; error?: string }> {
+    return this.request('/api/linkedin/disconnect', {
+      method: 'DELETE'
+    });
   }
   
 }

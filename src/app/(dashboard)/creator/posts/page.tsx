@@ -727,13 +727,19 @@ const createTwitterPostPayload = (postData: any, selectedPostType: string, media
 
         // Add platform-specific content
         if (selectedPlatform === 'youtube') {
-          postPayload.youtube_content = {
-            title: postData.title?.trim() || '',
-            description: postData.description?.trim() || '',
-            tags: postData.tags ? 
-              postData.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
-            privacy_status: postData.privacy || 'public'
+          // Normalize to backend's expected platformContent.youtube
+          postPayload.platform_content = {
+            youtube: {
+              title: postData.title?.trim() || '',
+              description: postData.description?.trim() || '',
+              tags: postData.tags ? postData.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+              privacy_status: postData.privacy || 'public'
+            }
           };
+          // Enforce YouTube media constraints early
+          if (mediaFiles.length !== 1 || !mediaFiles[0].type.startsWith('video/')) {
+            throw new Error('YouTube requires exactly one video file.');
+          }
         }
         // Add other platform content as needed...
       }
@@ -748,12 +754,72 @@ const createTwitterPostPayload = (postData: any, selectedPostType: string, media
 
       console.log('📤 Sending post payload:', JSON.stringify(postPayload, null, 2));
 
-      // Create the post
-      const response = await apiRequest('/api/posts', {
-        method: 'POST',
-        body: JSON.stringify(postPayload)
-      }) as any;
+      // Build request for create: use FormData so media files are uploaded
+      let createResponse: any;
+      if (mediaFiles.length > 0) {
+        const formData = new FormData();
+        // Append scalar JSON fields
+        formData.append('platform', postPayload.platform);
+        formData.append('post_type', postPayload.post_type);
+        formData.append('status', postPayload.status);
+        formData.append('title', postPayload.title || '');
+        formData.append('content', JSON.stringify(postPayload.content || {}));
+        // Platform-specific content wrapper expected by backend as platformContent
+        const platformContent = postPayload.platform_content
+          ? postPayload.platform_content
+          : (postPayload.youtube_content ? { youtube: postPayload.youtube_content } : {});
+        if (Object.keys(platformContent).length > 0) {
+          formData.append('platformContent', JSON.stringify(platformContent));
+        }
+        if (postPayload.tags) formData.append('tags', JSON.stringify(postPayload.tags));
+        if (postPayload.categories) formData.append('categories', JSON.stringify(postPayload.categories));
 
+        // Append media files under field name 'media' expected by backend upload middleware
+        mediaFiles.forEach((file) => formData.append('media', file));
+
+        // Use API base and include auth header to avoid 404/HTML responses
+        const { getApiBase } = await import('@/lib/config');
+        const { authUtils } = await import('@/lib/auth');
+        const baseURL = getApiBase();
+        const token = authUtils.getToken();
+
+        const res = await fetch(`${baseURL}/api/posts`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          // If server returned HTML, throw a readable error
+          if (text && text.trim().startsWith('<!DOCTYPE')) {
+            throw new Error('Server returned an HTML error page (likely 404). Check API base URL and route.');
+          }
+          try {
+            const errJson = JSON.parse(text);
+            throw new Error(errJson?.message || errJson?.error || `Request failed with status ${res.status}`);
+          } catch {
+            throw new Error(text || `Request failed with status ${res.status}`);
+          }
+        }
+
+        createResponse = await res.json();
+      } else {
+        // No files: JSON request is fine
+        createResponse = await apiRequest('/api/posts', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...postPayload,
+            // Normalize to platformContent for backend
+            ...(postPayload.youtube_content ? { platformContent: { youtube: postPayload.youtube_content } } : {})
+          })
+        });
+      }
+
+      const response = createResponse as any;
       console.log('✅ Post created successfully:', response);
 
       const postId = response.post?._id || response.data?.post?._id || response._id;
@@ -769,10 +835,7 @@ const createTwitterPostPayload = (postData: any, selectedPostType: string, media
       
       try {
         if (action === 'publish') {
-          await apiRequest(`/api/posts/${postId}/publish`, {
-            method: 'PUT',
-            
-          });
+          await apiRequest(`/api/posts/${postId}/publish`, { method: 'PUT' });
           console.log('✅ Post published successfully');
           publishSuccess = true;
         } else if (action === 'schedule' && postData.scheduledFor) {

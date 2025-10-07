@@ -2,11 +2,27 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+} from "lucide-react";
 import Button from "@/Components/ui/Button";
+import { Input } from "@/Components/ui/Input";
+import { Label } from "@/Components/ui/Label";
+import { Alert, AlertDescription } from "@/Components/ui/Alert";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/Components/ui/Select";
 import Link from "next/link";
 import { apiRequest } from "@/lib/apiClient";
-
-// Use centralized API client to avoid bad base URL concatenation
 
 const SignupForm: React.FC = () => {
   const router = useRouter();
@@ -16,241 +32,274 @@ const SignupForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [role, setRole] = useState("creator"); // default role
+  const [role, setRole] = useState("creator");
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  // Auto-fill email from URL parameter
+  // Auto-fill email from URL param
   useEffect(() => {
-    const emailParam = searchParams.get('email');
-    if (emailParam) {
-      setEmail(decodeURIComponent(emailParam));
-    }
+    const emailParam = searchParams.get("email");
+    if (emailParam) setEmail(decodeURIComponent(emailParam));
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true);
 
-    // ✅ Basic validation
     if (!name || !email || !password || !confirm) {
       setError("All fields are required");
+      setIsLoading(false);
       return;
     }
 
     if (password !== confirm) {
       setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      setIsLoading(false);
       return;
     }
 
     try {
-      const data = await apiRequest<{ success: boolean; data: { tokens?: { accessToken: string; refreshToken?: string }; user?: { role: string } }; message?: string }>(
-        '/api/auth/register',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password, role })
-        }
-      );
+      const data = await apiRequest<{
+        success: boolean;
+        data: {
+          tokens?: { accessToken: string; refreshToken?: string };
+          user?: { role: string };
+        };
+        message?: string;
+      }>("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role }),
+      });
 
-      console.log("✅ Signup successful:", data);
-
-      // If backend returns tokens and user, auto-login; else fallback to programmatic login
       if (data?.data?.tokens?.accessToken && data?.data?.user) {
-        localStorage.setItem('token', data.data.tokens.accessToken);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        localStorage.setItem("token", data.data.tokens.accessToken);
+        localStorage.setItem("user", JSON.stringify(data.data.user));
         const role = data.data.user?.role;
-        router.push(role === 'brand' ? '/brand' : '/creator');
+        router.push(role === "brand" ? "/brand" : "/creator");
       } else {
-        // Attempt programmatic login using provided credentials to avoid extra step
-        try {
-          const loginResp = await apiRequest<{ success: boolean; data: { tokens: { accessToken: string; refreshToken?: string }; user: { role: string } }; message?: string }>(
-            '/api/auth/login',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, password })
-            }
+        // fallback: auto-login
+        const loginResp = await apiRequest<{
+          success: boolean;
+          data: {
+            tokens: { accessToken: string; refreshToken?: string };
+            user: { role: string };
+          };
+          message?: string;
+        }>("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        localStorage.setItem("token", loginResp.data.tokens.accessToken);
+        if (loginResp.data.tokens.refreshToken)
+          localStorage.setItem(
+            "refreshToken",
+            loginResp.data.tokens.refreshToken
           );
+        localStorage.setItem("user", JSON.stringify(loginResp.data.user));
 
-          localStorage.setItem('token', loginResp.data.tokens.accessToken);
-          if (loginResp.data.tokens.refreshToken) {
-            localStorage.setItem('refreshToken', loginResp.data.tokens.refreshToken);
-          }
-          localStorage.setItem('user', JSON.stringify(loginResp.data.user));
-
-          const roleAfterSignup = loginResp.data.user?.role;
-          router.push(roleAfterSignup === 'brand' ? '/brand' : '/creator');
-        } catch (loginErr) {
-          // If auto-login fails, as a last resort send user to login
-          console.error('Auto-login after signup failed:', loginErr);
-          router.push('/login');
-        }
+        const roleAfterSignup = loginResp.data.user?.role;
+        router.push(roleAfterSignup === "brand" ? "/brand" : "/creator");
       }
-    } catch (err: unknown) {
-      console.error("Signup error:", err instanceof Error ? err.message : 'Unknown error');
+    } catch (err) {
+      console.error("Signup error:", err);
       setError("Network error. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-6 sm:px-8 md:px-12">
-        <div className="w-full max-w-7xl flex items-stretch gap-8 md:gap-12">
-          {/* Left Side - Banner Section */}
-          <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center pr-8 xl:pr-16">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="max-w-lg"
-          >
-            <h1 className="text-4xl xl:text-5xl font-bold mb-6 bg-gradient-to-r from-indigo-300 via-purple-300 to-sky-300 bg-clip-text text-transparent">
-              Join the BlooCube Revolution
-            </h1>
-            <p className="text-xl text-zinc-300 mb-8 leading-relaxed">
-              Start your journey with AI-powered social media management. Connect with creators, grow your brand, and scale your impact.
-            </p>
-            
-            {/* Feature highlights */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">🎯</span>
-                </div>
-                <span className="text-zinc-300">Smart campaign management</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">💡</span>
-                </div>
-                <span className="text-zinc-300">AI content suggestions</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-orange-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">🤝</span>
-                </div>
-                <span className="text-zinc-300">Connect with top creators</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">📈</span>
-                </div>
-                <span className="text-zinc-300">Real-time performance tracking</span>
-              </div>
+    <section className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#050510] px-4 py-6">
+      {/* Animated glowing background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-[450px] h-[450px] bg-gradient-to-br from-indigo-600/30 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -right-40 w-[450px] h-[450px] bg-gradient-to-tr from-fuchsia-600/30 to-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-full blur-3xl opacity-50" />
+      </div>
+
+      {/* Subtle grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 25 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10 w-full max-w-lg rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl shadow-[0_0_40px_rgba(99,102,241,0.25)] p-6 sm:p-8"
+      >
+        <div className="absolute -top-2 -left-2 w-24 h-24 bg-gradient-to-br from-blue-600 to-purple-600 rounded-tl-3xl blur-2xl opacity-50" />
+        <div className="absolute -bottom-2 -right-2 w-24 h-24 bg-gradient-to-tl from-fuchsia-600 to-cyan-600 rounded-br-3xl blur-2xl opacity-50" />
+
+        <div className="text-center mb-6">
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+            Create Your Account
+          </h2>
+          <p className="text-zinc-400 text-sm mt-1">
+            Join thousands of creators and brands
+          </p>
+          {searchParams.get("email") && (
+            <div className="mt-3 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <p className="text-sm text-emerald-300">
+                ✨ Email pre-filled from landing page
+              </p>
             </div>
-          </motion.div>
+          )}
         </div>
 
-          {/* Right Side - Signup Form */}
-          <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center lg:pl-12 xl:pl-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="w-full max-w-md bg-black/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 text-white border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
-          >
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Create Your Account</h2>
-              <p className="text-zinc-400">Join thousands of creators and brands</p>
-              {searchParams.get('email') && (
-                <div className="mt-3 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                  <p className="text-sm text-emerald-300">
-                    ✨ Email pre-filled from landing page
-                  </p>
-                </div>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Full Name */}
+          <div>
+            <Label htmlFor="name" className="text-zinc-300 text-sm mb-2 block">
+              Full Name
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="pl-10 h-11 bg-white/5 border-white/10 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-indigo-500/30"
+              />
             </div>
-            
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                />
-              </div>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                />
-              </div>
-              <div>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 border border-white/10"
-                >
-                  <option value="creator" className="bg-black text-white">Creator</option>
-                  <option value="brand" className="bg-black text-white">Brand</option>
-                </select>
-              </div>
-              <Button type="submit" size="md" className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
-                Create Account
-              </Button>
-            </form>
-
-            {error && <p className="text-red-400 mt-4 text-sm text-center">{error}</p>}
-
-            <div className="mt-6 text-sm text-white/70 text-center">
-              Already have an account?{" "}
-              <Link href="/login" className="hover:text-white font-medium transition-colors">
-                Sign In
-              </Link>
-            </div>
-          </motion.div>
           </div>
-        </div>
+
+          {/* Email */}
+          <div>
+            <Label htmlFor="email" className="text-zinc-300 text-sm mb-2 block">
+              Email Address
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 h-11 bg-white/5 border-white/10 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-indigo-500/30"
+              />
+            </div>
+          </div>
+
+          {/* Password + Confirm */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Label htmlFor="password" className="text-zinc-300 text-sm mb-2 block">
+                Password
+              </Label>
+              <Lock className="absolute left-3 top-[38px] w-5 h-5 text-zinc-400" />
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10 h-11 bg-white/5 border-white/10 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-indigo-500/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-[38px] text-zinc-400 hover:text-white"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <Label htmlFor="confirm" className="text-zinc-300 text-sm mb-2 block">
+                Confirm Password
+              </Label>
+              <Lock className="absolute left-3 top-[38px] w-5 h-5 text-zinc-400" />
+              <Input
+                id="confirm"
+                type={showConfirm ? "text" : "password"}
+                placeholder="••••••••"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className="pl-10 pr-10 h-11 bg-white/5 border-white/10 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-indigo-500/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-[38px] text-zinc-400 hover:text-white"
+              >
+                {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Role */}
+          <div>
+            <Label htmlFor="role" className="text-zinc-300 text-sm mb-2 block">
+              Select Role
+            </Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="h-11 bg-white/5 border-white/10 text-white rounded-xl">
+                <SelectValue placeholder="Choose a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="creator">Creator</SelectItem>
+                <SelectItem value="brand">Brand</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error && (
+            <Alert className="bg-red-500/10 border-red-500/20 rounded-xl">
+              <AlertDescription className="text-red-400 text-sm">{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-11 bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all duration-300"
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Creating account...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span>Sign Up</span>
+                <ArrowRight className="w-5 h-5" />
+              </div>
+            )}
+          </Button>
+
+          <p className="mt-5 text-center text-zinc-400 text-sm">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="text-indigo-400 hover:text-fuchsia-400 font-semibold transition-colors"
+            >
+              Login
+            </Link>
+          </p>
+        </form>
+      </motion.div>
     </section>
   );
 };
 
-const SignupPage: React.FC = () => {
-  return (
-    <Suspense fallback={
-      <section className="min-h-screen flex items-center justify-center px-8 lg:px-16 xl:px-24">
-        <div className="w-full max-w-7xl flex">
-          <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center pl-8 xl:pl-16">
-            <div className="w-full max-w-md bg-black/80 backdrop-blur-xl rounded-3xl p-8 text-white border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-                <p className="text-zinc-400">Loading...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    }>
-      <SignupForm />
-    </Suspense>
-  );
-};
+const SignupPage: React.FC = () => (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Loading...</div>}>
+    <SignupForm />
+  </Suspense>
+);
 
 export default SignupPage;
