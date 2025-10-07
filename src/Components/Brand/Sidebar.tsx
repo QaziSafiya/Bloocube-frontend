@@ -13,13 +13,12 @@ import React from "react";
 import Link from "next/link";
 
 const sidebarItems = [
-  { name: "Overview", icon: LayoutDashboard, href: "/creator" },
-  { name: "Posts", icon: NotebookPen, href: "/creator/posts" },
-  { name: "Analytics", icon: ChartLine, href: "/creator/analytics" },
-  { name: "Campaign", icon: Megaphone, href: "/creator/campaigns" },
-  { name: "Competitor Analysis", icon: Users, href: "/creator/analysis" },
-  { name: "Marketplace", icon: Package, href: "/creator/marketplace" },
-  { name: "Settings", icon: Settings, href: "/creator/settings" },
+  { name: "Overview", icon: LayoutDashboard, href: "/brand" },
+  //   { name: "Posts", icon: NotebookPen, href: "tor/posts" },
+  { name: "Analytics", icon: ChartLine, href: "/brand/analytics" },
+  { name: "Compaigns", icon: Megaphone, href: "/brand/campaigns" },
+  { name: "Marketplace", icon: Package, href: "/brand/marketplace" },
+  { name: "Settings", icon: Settings, href: "/brand/settings" },
 ];
 
 const Sidebar = ({ isOpen }: { isOpen: boolean }) => {

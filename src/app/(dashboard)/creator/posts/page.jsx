@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { Calendar, Upload, MoreHorizontal, Facebook, Instagram, Twitter, Linkedin, BarChart3, Users, MessageCircle, Heart, Share, Eye } from 'lucide-react';
 import Sidebar from '@/Components/Creater/Sidebar';
-
+import Navbar from '@/Components/Creater/Navbar';
+import Footer from '@/Components/Creater/Footer';
 export default function PostsPage() {
+   const[isOpen ,setIsOpen]=useState(true)
   const [activeTab, setActiveTab] = useState('create');
   const [postContent, setPostContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState({
@@ -127,20 +129,19 @@ export default function PostsPage() {
     }
   };
 
+ 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-     
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* Navbar */}
+      <Navbar isOpen={isOpen}  setIsOpen={setIsOpen}/>
 
-      <div className="flex min-h-screen">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200">
-        <Sidebar />
-        </div>
-
+      <Sidebar isOpen={isOpen} />
         {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50 to-blue-50">
+           
+          <div className="w-full mx-auto">
             <h1 className="text-2xl font-semibold text-gray-900 mb-6">Posts</h1>
 
             {/* Create New Post Section */}
@@ -349,6 +350,7 @@ export default function PostsPage() {
           </div>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 }

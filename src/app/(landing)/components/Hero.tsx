@@ -1,12 +1,21 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
-import Button from '@/Components/ui/Button';
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaPinterest, FaRedditAlien, FaSlack, FaWhatsapp, FaGithub, FaDiscord } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/Components/ui/Button";
+import {
+  FaFacebookF,
+  FaTwitter,
+  FaInstagram,
+  FaLinkedinIn,
+  FaYoutube,
+  FaSlack,
+  FaGithub,
+  FaDiscord,
+  FaRedditAlien,
+} from "react-icons/fa";
 
 const Hero: React.FC = () => {
-  // Typewriter state (must be at top-level for hooks rules)
   const words = ["workspace", "center", "OS"];
   const [index, setIndex] = useState(0);
   const [subIndex, setSubIndex] = useState(0);
@@ -17,102 +26,143 @@ const Hero: React.FC = () => {
     const atWordEnd = subIndex === current.length;
     const atWordStart = subIndex === 0;
 
-    const timeout = setTimeout(() => {
-      setSubIndex((prev) => prev + (deleting ? -1 : 1));
-      if (!deleting && atWordEnd) {
-        setDeleting(true);
-      } else if (deleting && atWordStart) {
-        setDeleting(false);
-        setIndex((prev) => (prev + 1) % words.length);
-      }
-    }, deleting ? 75 : 105);
+    const timeout = setTimeout(
+      () => {
+        setSubIndex((prev) => prev + (deleting ? -1 : 1));
+        if (!deleting && atWordEnd) {
+          setDeleting(true);
+        } else if (deleting && atWordStart) {
+          setDeleting(false);
+          setIndex((prev) => (prev + 1) % words.length);
+        }
+      },
+      deleting ? 75 : 105
+    );
+
     return () => clearTimeout(timeout);
   }, [subIndex, deleting, index]);
 
   return (
-    <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 md:pt-28 pb-20 sm:pb-28 md:pb-36">
-      {/* Minimal, tasteful icon accents (hidden on very small screens) */}
-      <div className="pointer-events-none absolute inset-0">
-        {/* Core icons - reduced on mobile for performance */}
-        <FaFacebookF className="hidden sm:block absolute top-16 left-4 sm:left-8 text-indigo-400/25 text-lg sm:text-2xl animate-drift-a" />
-        <FaYoutube className="hidden sm:block absolute top-20 right-2 sm:right-10 text-rose-400/25 text-xl sm:text-3xl animate-drift-b drift-delay-1" />
-        <FaInstagram className="hidden sm:block absolute top-28 left-1/5 sm:left-1/3 text-fuchsia-400/25 text-lg sm:text-2xl animate-drift-c drift-delay-2" />
-        <FaLinkedinIn className="hidden sm:block absolute top-36 right-1/6 sm:right-1/4 text-sky-400/25 text-lg sm:text-2xl animate-drift-a drift-delay-3" />
-        <FaTwitter className="hidden sm:block absolute top-52 left-6 sm:left-24 text-sky-300/25 text-lg sm:text-2xl animate-drift-b" />
+    <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 md:pt-20 pb-16 sm:pb-20 md:pb-28">
+      {/* Floating icons */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Top Left Cluster */}
+        <FaFacebookF className="hidden sm:block absolute top-12 left-8 text-indigo-400/30 text-2xl md:text-4xl animate-drift-a glow delay-0" />
+        <FaInstagram className="hidden sm:block absolute top-24 left-1/4 text-fuchsia-400/30 text-2xl md:text-4xl animate-drift-b glow delay-1" />
+        <FaLinkedinIn className="hidden sm:block absolute top-80 left-1/8 text-sky-400/30 text-2xl md:text-4xl animate-drift-c glow delay-2" />
 
-        {/* Extra subtle icons for richness - hidden on mobile for performance */}
-        <FaPinterest className="hidden md:block absolute top-[18%] left-[55%] text-rose-400/20 text-lg sm:text-2xl animate-drift-b" style={{animationDuration:'17s'}} />
-        <FaRedditAlien className="hidden md:block absolute top-[42%] left-[8%] text-orange-400/20 text-lg sm:text-2xl animate-drift-c" style={{animationDuration:'19s', animationDelay:'1.2s'}} />
-        <FaSlack className="hidden md:block absolute top-[38%] right-[12%] text-purple-300/20 text-lg sm:text-2xl animate-drift-a" style={{animationDuration:'16s', animationDelay:'0.6s'}} />
-        <FaWhatsapp className="hidden md:block absolute top-[62%] left-[18%] text-emerald-400/20 text-lg sm:text-2xl animate-drift-b" style={{animationDuration:'18s'}} />
-        <FaGithub className="hidden md:block absolute top-[8%] right-[22%] text-zinc-300/20 text-lg sm:text-2xl animate-drift-c" style={{animationDuration:'20s'}} />
-        <FaDiscord className="hidden md:block absolute top-[70%] right-[8%] text-indigo-300/20 text-lg sm:text-2xl animate-drift-a" style={{animationDuration:'22s', animationDelay:'0.8s'}} />
+        {/* Top Right Cluster */}
+        <FaYoutube className="hidden sm:block absolute top-16 right-10 text-rose-400/30 text-3xl md:text-5xl animate-drift-a glow delay-3" />
+        <FaTwitter className="hidden sm:block absolute top-32 right-1/4 text-sky-300/30 text-2xl md:text-4xl animate-drift-b glow delay-4" />
+        <FaGithub className="hidden sm:block absolute top-82 right-12 text-neutral-300/30 text-2xl md:text-4xl animate-drift-c glow delay-5" />
+
+        {/* Bottom Area for More Depth */}
+        <FaDiscord className="hidden sm:block absolute bottom-20 left-1/5 text-indigo-400/25 text-2xl md:text-4xl animate-drift-a glow delay-6" />
+        <FaRedditAlien className="hidden sm:block absolute bottom-28 right-1/-6 text-orange-400/25 text-2xl md:text-4xl animate-drift-b glow delay-7" />
+        <FaSlack className="hidden sm:block absolute bottom-10 right-1/8 text-pink-400/25 text-2xl md:text-4xl animate-drift-c glow delay-8" />
       </div>
+
       <div className="text-center">
+        {/* Hero Heading */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold mb-4 text-white leading-[1.12] sm:leading-[1.1] md:leading-[1.06] tracking-[-0.01em] sm:tracking-[-0.015em] md:tracking-[-0.02em] max-w-3xl sm:max-w-4xl mx-auto px-1"
+          className=" bg-clip-text text-transparent  bg-gradient-to-r from-purple-500 to-indigo-500
+             text-[2.2rem] sm:text-[3.2rem] md:text-[3.8rem] lg:text-[4.2rem] xl:text-[4.6rem] 
+             font-extrabold mb-4 leading-snug tracking-tight max-w-5xl mx-auto px-2"
         >
-          Your <span className="text-gradient-primary">social media</span>{' '}
-          <span className="text-gradient-primary">{words[index].substring(0, subIndex)}</span>
+          Your Social media
+          <br className="block sm:hidden" />
+          <span className="bg-clip-text text-transparent  bg-gradient-to-r from-purple-500 to-indigo-500 ml-4">
+            {words[index].substring(0, subIndex)}
+          </span>
           <span className="ml-1 inline-block h-[1em] w-px align-middle bg-white/70 animate-caret" />
         </motion.h1>
+
+        {/* Sub-heading */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.05 }}
-          className="mx-auto mb-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10.5px] sm:text-[11px] text-zinc-300 backdrop-blur"
+          className="mx-auto mb-6 inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto px-4 text-zinc-300 backdrop-blur-md"
         >
           AI-powered social marketing OS
           <span className="h-1 w-1 rounded-full bg-emerald-400/80" />
           Ship content with confidence
         </motion.div>
+
+        {/* Paragraph */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-sm sm:text-[15px] md:text-base text-zinc-300/90 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-1"
+          className="text-base sm:text-lg md:text-xl text-gray-400 max-w-3xl mx-auto px-4"
         >
-          Operate campaigns, insights, and publishing from one streamlined system. Enterprise-grade security, delightful UX.
+          Operate campaigns, insights, and publishing from one streamlined
+          system. Enterprise-grade security, delightful UX.
         </motion.p>
+
+        {/* Attractive Form */}
         <motion.form
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto flex w-full max-w-md sm:max-w-xl flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 rounded-full sm:rounded-full border border-white/10 bg-white/[0.04] p-2 backdrop-blur px-2 sm:px-3"
           onSubmit={(e) => e.preventDefault()}
+          className="mx-auto mt-12 flex w-full max-w-md sm:max-w-xl lg:max-w-2xl flex-row gap-2 sm:gap-3 rounded-xl border border-white/10 bg-white/[0.05] p-1 sm:p-2 backdrop-blur-md shadow-lg hover:shadow-xl transition flex-nowrap"
         >
           <input
             type="email"
-            placeholder="Work email"
-            className="flex-1 bg-transparent px-3 sm:px-4 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none w-full"
+            placeholder="Enter your work email..."
+            className="flex-1 min-w-0 bg-transparent px-3 sm:px-4 py-2 text-sm sm:text-base md:text-base text-white placeholder:text-zinc-400 focus:outline-none rounded-full"
           />
-          <Button size="md" className="w-full sm:w-auto">
+          <Button
+            // size="md"
+            className="w-auto rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
+                       hover:opacity-90 transition text-white font-semibold 
+                       px-2 sm:px-4 py-3 sm:py-2 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm sm:text-base"
+          >
             Start free trial
-            <ArrowRight className="inline-block ml-2 w-4 h-4" />
+            <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.form>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-3 sm:mt-4 text-[10.5px] sm:text-[11px] text-zinc-500 px-1"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-6 sm:mt-2 text-center"
         >
-          By continuing you agree to our Terms and Privacy Policy.
-        </motion.div>
+          <span className="!text-xs sm:!text-sm text-zinc-500 whitespace-nowrap">
+            By continuing you agree to our Terms and Privacy Policy.
+          </span>
+        </motion.p>
+
+        {/* Trusted By */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35 }}
-          className="mx-auto mt-6 sm:mt-8 flex max-w-lg sm:max-w-xl flex-wrap items-center justify-center gap-2.5 sm:gap-4 opacity-80 px-1"
+          className="mx-auto mt-12 flex flex-col items-center gap-2 sm:gap-3 opacity-90 max-w-full"
         >
-          <span className="text-[10.5px] sm:text-[11px] text-zinc-500">Trusted by teams at</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Acme Co.</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Vertex Labs</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Northstar</span>
-          <span className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300">Everline</span>
+          {/* Trusted by text */}
+          <span className="text-sm sm:text-base text-zinc-500 mb-2">
+            Trusted by teams at
+          </span>
+
+          {/* Brand names */}
+          <div className="flex flex-row flex-wrap justify-center gap-3 overflow-x-auto w-full sm:w-auto">
+            {["Acme Co.", "Vertex Labs", "Northstar", "Everline"].map(
+              (brand) => (
+                <span
+                  key={brand}
+                  className="whitespace-nowrap rounded-md border border-white/10 bg-white/[0.08] px-4 py-1.5 text-sm sm:text-base text-zinc-200"
+                >
+                  {brand}
+                </span>
+              )
+            )}
+          </div>
         </motion.div>
       </div>
     </section>
@@ -120,5 +170,3 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
-
-
