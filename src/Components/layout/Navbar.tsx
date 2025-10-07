@@ -1,6 +1,7 @@
 "use client";
 
-import { Zap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import Image from "next/image";
 import Button from "@/Components/ui/Button";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -40,23 +41,23 @@ const Navbar = () => {
           
           {/* Content */}
           <div className="relative z-10">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
+             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
               <div className="flex h-14 md:h-16 items-center justify-between">
               {/* Logo */}
-              <Link href="/" className="group flex items-center gap-3">
+              <Link href="/" className="group">
                 <motion.div
                   whileHover={{ rotate: 6, scale: 1.05 }}
-                  className="relative w-10 h-10 md:w-11 md:h-11 bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-[0_0_32px_rgba(99,102,241,0.3)] group-hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] transition-all duration-300"
+                  className="relative w-20 h-20 transition-all duration-300 overflow-hidden"
                 >
-                  <Zap className="w-5 h-5 text-white" />
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-fuchsia-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Image
+                    src="/logo.png"
+                    alt="Bloocube Logo"
+                    fill
+                    className="object-contain p-1"
+                    priority
+                  />
+                  <div className="transition-opacity duration-300" />
                 </motion.div>
-                <div className="flex flex-col">
-                  <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-indigo-300 via-purple-300 to-sky-300 bg-clip-text text-transparent tracking-tight">
-                    Bloocube
-                  </span>
-                  <span className="text-xs text-zinc-400 -mt-1 hidden md:block">AI-Powered Social Media</span>
-                </div>
               </Link>
 
               {/* Desktop nav */}

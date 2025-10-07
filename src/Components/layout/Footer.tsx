@@ -1,17 +1,21 @@
-import { Zap } from 'lucide-react'
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const Footer = () => {
   return (
          <footer className="relative z-10 border-t border-white/[0.06] px-6 py-16 backdrop-blur bg-white/[0.02]">
         <div className="max-w-7xl mx-auto text-gray-300 grid grid-cols-1 md:grid-cols-4 gap-10">
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+            <div className="flex items-center mb-4">
+              <div className="relative w-24 h-24">
+                <Image
+                  src="/logo.png"
+                  alt="Bloocube Logo"
+                  fill
+                  className="object-contain p-1"
+                />
               </div>
-              <span className="text-xl font-bold">Bloocube</span>
             </div>
             <p className="text-gray-400">Your social media workspace powered by AI.</p>
           </div>
