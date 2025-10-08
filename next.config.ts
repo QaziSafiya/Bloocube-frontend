@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+
 // Validate critical environment variables at build time
 const requiredEnvVars = ['NEXT_PUBLIC_API_URL'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -15,6 +16,7 @@ if (missingEnvVars.length > 0) {
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker/Cloud Run
   output: 'standalone',
+  // (Removed unsupported outputFileTracing key for Next.js 15)
 
   // Explicitly expose public environment variables
   env: {

@@ -2,10 +2,10 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   value?: string;
   onValueChange?: (value: string) => void;
-}
+};
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, value, onValueChange, onChange, ...props }, ref) => {

@@ -1,20 +1,25 @@
+import { getApiBase } from '@/lib/config';
 import { NextRequest, NextResponse } from 'next/server';
+// You'll need a way to get your user's session from the request.
+// This depends on your auth library (e.g., Iron Session, Next-Auth, lucia-auth).
+// import { getSession } from 'your-auth-library'; 
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state');
-    const redirectUri = searchParams.get('redirectUri');
 
-    if (!code || !state || !redirectUri) {
+    // The redirectUri to your backend is the current URL of this callback
+    const redirectUri = new URL(request.url).origin + new URL(request.url).pathname;
+
+    if (!code || !state) {
       return NextResponse.json(
-        { success: false, error: 'Missing required parameters' },
+        { success: false, error: 'Missing code or state from LinkedIn' },
         { status: 400 }
       );
     }
 
-    // LinkedIn OAuth configuration
     const clientId = process.env.LINKEDIN_CLIENT_ID;
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
 
@@ -24,16 +29,9 @@ export async function GET(request: NextRequest) {
       clientIdPreview: clientId ? clientId.substring(0, 9) + "..." : "Not set"
     });
 
-    if (!clientId) {
+    if (!clientId || !clientSecret) {
       return NextResponse.json(
-        { success: false, error: 'LinkedIn Client ID not configured. Please set LINKEDIN_CLIENT_ID environment variable.' },
-        { status: 500 }
-      );
-    }
-
-    if (!clientSecret) {
-      return NextResponse.json(
-        { success: false, error: 'LinkedIn Client Secret not configured. Please set LINKEDIN_CLIENT_SECRET environment variable.' },
+        { success: false, error: 'LinkedIn credentials are not configured on the server.' },
         { status: 500 }
       );
     }
@@ -41,9 +39,7 @@ export async function GET(request: NextRequest) {
     // Exchange authorization code for access token
     const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
@@ -56,67 +52,95 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
       console.error('LinkedIn token exchange error:', errorData);
-      return NextResponse.json(
-        { success: false, error: 'Failed to exchange authorization code' },
-        { status: 400 }
-      );
+      throw new Error('Failed to exchange authorization code');
     }
 
     const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-
-    if (!accessToken) {
-      return NextResponse.json(
-        { success: false, error: 'No access token received' },
-        { status: 400 }
-      );
-    }
 
     // Get user profile information
     const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
     });
 
     if (!profileResponse.ok) {
       const errorData = await profileResponse.text();
       console.error('LinkedIn profile fetch error:', errorData);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch LinkedIn profile' },
-        { status: 400 }
-      );
+      throw new Error('Failed to fetch LinkedIn profile');
     }
 
     const profileData = await profileResponse.json();
 
-    // Store the LinkedIn connection data
     const linkedInData = {
       id: profileData.sub,
       firstName: profileData.given_name || '',
       lastName: profileData.family_name || '',
       email: profileData.email || '',
-      accessToken,
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000)),
       connectedAt: new Date().toISOString(),
     };
+    
+    // 🚨 FIX 3: Get your application's user auth token from the session/cookie
+    // This is pseudo-code; you must implement this based on your auth library.
+    // const session = await getSession(request); 
+    // const userAuthToken = session.token; 
+    // if (!userAuthToken) {
+    //   throw new Error('User is not authenticated.');
+    // }
 
-    // Return success response with LinkedIn data
-    return NextResponse.json({
-      success: true,
-      message: 'LinkedIn connected successfully',
-      data: linkedInData
-    });
+    try {
+      // Get auth token from Authorization header or cookie set by your app
+      const authHeader = request.headers.get('authorization');
+      const cookieToken = request.cookies.get('token')?.value;
+      const userAuthToken = authHeader?.startsWith('Bearer ')
+        ? authHeader.replace(/^Bearer\s+/i, '')
+        : cookieToken || null;
+
+      if (!userAuthToken) {
+        throw new Error('User is not authenticated. Missing token in header/cookie');
+      }
+
+      const apiBase = getApiBase();
+      const response = await fetch(`${apiBase}/api/linkedin/save-connection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userAuthToken}`, // Send your APP's auth token
+        },
+        body: JSON.stringify(linkedInData),
+      });
+    
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save LinkedIn connection');
+      }
+    
+    } catch (saveError) {
+      console.error('Error saving LinkedIn connection to backend:', saveError);
+      
+      // ✅ FIX 1: Safely handle the 'unknown' type for the error
+      let errorMessage = 'An unknown error occurred while saving the connection.';
+      if (saveError instanceof Error) {
+        errorMessage = saveError.message;
+      }
+      
+      // ✅ FIX 2: Redirect to your settings page, not a Twitter URL
+      const frontendSettingsUrl = new URL(request.url).origin + '/creator/settings';
+      return NextResponse.redirect(`${frontendSettingsUrl}?linkedin=error&message=${encodeURIComponent(errorMessage)}`);
+    }
+
+    // On success, redirect to the settings page
+    const successUrl = new URL(request.url).origin + '/creator/settings';
+    return NextResponse.redirect(`${successUrl}?linkedin=success`);
 
   } catch (error) {
     console.error('LinkedIn callback error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to connect LinkedIn account',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    const frontendSettingsUrl = new URL(request.url).origin + '/creator/settings';
+    let errorMessage = 'Failed to connect LinkedIn account';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return NextResponse.redirect(`${frontendSettingsUrl}?linkedin=error&message=${encodeURIComponent(errorMessage)}`);
   }
 }
-

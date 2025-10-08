@@ -4,7 +4,11 @@ import { getApiBase } from '@/lib/config';
 export async function GET(request: NextRequest) {
   try {
     const base = getApiBase();
-    const token = request.headers.get('authorization') || '';
+    const headerAuth = request.headers.get('authorization');
+    const cookieToken = request.cookies.get('token')?.value;
+    const token = headerAuth?.startsWith('Bearer ')
+      ? headerAuth
+      : (cookieToken ? `Bearer ${cookieToken}` : '');
     const res = await fetch(`${base}/api/linkedin/profile`, {
       method: 'GET',
       headers: {

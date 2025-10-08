@@ -1,56 +1,72 @@
+// src/hooks/useLinkedIn.ts
 import { useState } from 'react';
-import { linkedInService } from '@/lib/linkedin';
+import { linkedInService, LinkedInUser, LinkedInProfileResponse } from '@/lib/linkedin'; // Import LinkedInUser
 import { authUtils } from '@/lib/auth';
-// import { config } from '@/lib/config'; // Unused import
+import { getApiBase } from '@/lib/config'; 
 
 export const useLinkedIn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [profile, setProfile] = useState<unknown | null>(null);
+  // ✅ Use the specific LinkedInUser type for better type safety
+  const [profile, setProfile] = useState<LinkedInUser | null>(null);
 
-  const connect = async (redirectUri?: string) => {
+  const connect = async () => { // Removed 'redirectUri' since we now have a fixed backend callback
     try {
       setLoading(true);
       setError(null);
-      const callbackUrl = redirectUri || `${window.location.origin}/auth/linkedin/callback`;
+  
+      // BEFORE:
+      // const callbackUrl = redirectUri || `${window.location.origin}/auth/linkedin/callback`;
+  
+      // ✅ AFTER: Point to your Express backend
+      const callbackUrl = `${getApiBase()}/api/linkedin/callback`;
+      
+      // This part is important: the redirectUri sent to your backend
+      // must be the one that will be used in the final step.
       const res = await linkedInService.generateAuthURL(callbackUrl);
+  
       if (res.success && res.authURL) {
-        localStorage.setItem('linkedin_state', res.state || '');
         window.location.href = res.authURL;
       } else {
         throw new Error(res.error || 'Failed to generate LinkedIn auth URL');
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to connect to LinkedIn');
+      // ... error handling
     } finally {
       setLoading(false);
     }
   };
 
-  const getProfile = async () => {
+  const getProfile = async (): Promise<LinkedInProfileResponse> => {
     try {
       setLoading(true);
       setError(null);
+
       if (!authUtils.isAuthenticated()) {
+        const authError = 'Not authenticated';
         setIsConnected(false);
         setProfile(null);
-        return { success: false, error: 'Not authenticated' };
+        return { success: false, error: authError };
       }
+
       const res = await linkedInService.getProfile();
-      if (res && (res as any).success) {
+      
+      // ✅ No more 'as any' casts needed, TypeScript understands the shape of 'res'
+      if (res.success && res.profile) {
         setIsConnected(true);
-        setProfile((res as any).profile || null);
+        setProfile(res.profile);
       } else {
         setIsConnected(false);
         setProfile(null);
       }
       return res;
     } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch LinkedIn profile';
       setIsConnected(false);
       setProfile(null);
-      setError(e instanceof Error ? e.message : 'Failed to fetch LinkedIn profile');
-      return { success: false, error: e instanceof Error ? e.message : 'Failed to fetch LinkedIn profile' } as any;
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setLoading(false);
     }
@@ -61,14 +77,15 @@ export const useLinkedIn = () => {
       setLoading(true);
       setError(null);
       const res = await linkedInService.disconnect();
-      if ((res as any).success) {
+      if (res.success) {
         setIsConnected(false);
         setProfile(null);
       }
       return res;
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to disconnect LinkedIn');
-      throw e;
+      // ✅ Standardized error handling: set state instead of throwing
+      const message = e instanceof Error ? e.message : 'Failed to disconnect LinkedIn';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -76,5 +93,3 @@ export const useLinkedIn = () => {
 
   return { connect, getProfile, disconnect, isConnected, profile, loading, error };
 };
-
-

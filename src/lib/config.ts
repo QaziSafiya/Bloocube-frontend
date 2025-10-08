@@ -2,13 +2,14 @@
 export const config = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL,
   appUrl: process.env.NEXT_FRONTEND_API_URL,
+  FRONTEND_URL: process.env.FRONTEND_URL,
   twitter: {
     // callbackUrl: 'http://localhost:3000/auth/twitter/callback'
-    callbackUrl: process.env.NEXT_FRONTEND_API_URL + '/auth/twitter/callback'
+    callbackUrl: process.env.FRONTEND_URL + '/auth/twitter/callback'
   },
   youtube: {
     // callbackUrl: 'http://localhost:3000/auth/youtube/callback'
-    callbackUrl: process.env.NEXT_FRONTEND_API_URL + '/auth/youtube/callback'
+    callbackUrl: process.env.FRONTEND_URL + '/auth/youtube/callback'
   },
 };
 
