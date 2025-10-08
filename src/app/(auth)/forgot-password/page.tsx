@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/Components/ui/Button";
 import { Input } from "@/Components/ui/input";
-import { Label } from "@/Components/ui/label";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/Components/ui/alert";
 
 const ResetPasswordPage: React.FC<{ params: { token: string } }> = ({

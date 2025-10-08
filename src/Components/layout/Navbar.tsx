@@ -8,6 +8,8 @@ import clsx from "clsx";
 import { Button } from "../ui/Button";
 
 const navItems = [
+  { href: "#hero", label: "Home" },
+  { href: "/component/about", label: "About" },
   { href: "#features", label: "Features" },
   { href: "#pricing", label: "Pricing" },
   { href: "#resources", label: "Resources" },
