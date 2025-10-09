@@ -1,6 +1,6 @@
 // Select component with onValueChange support
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   value?: string;
@@ -32,7 +32,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 );
 Select.displayName = "Select";
 
-export interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+export interface SelectTriggerProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, children, ...props }, ref) => {
@@ -53,18 +54,15 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
 );
 SelectTrigger.displayName = "SelectTrigger";
 
-export interface SelectValueProps extends React.HTMLAttributes<HTMLSpanElement> {
+export interface SelectValueProps
+  extends React.HTMLAttributes<HTMLSpanElement> {
   placeholder?: string;
 }
 
 const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
   ({ className, placeholder, ...props }, ref) => {
     return (
-      <span
-        ref={ref}
-        className={cn("block truncate", className)}
-        {...props}
-      >
+      <span ref={ref} className={cn("block truncate", className)} {...props}>
         {placeholder}
       </span>
     );
@@ -72,7 +70,8 @@ const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
 );
 SelectValue.displayName = "SelectValue";
 
-export interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface SelectContentProps
+  extends React.HTMLAttributes<HTMLDivElement> {}
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
@@ -115,4 +114,30 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
 );
 SelectItem.displayName = "SelectItem";
 
-export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
+const SelectIcon = React.forwardRef<HTMLDivElement, SelectItemProps>(
+  ({ className, children, value, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          className
+        )}
+        data-value={value}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+SelectItem.displayName = "SelectIcon";
+
+export {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectIcon,
+};

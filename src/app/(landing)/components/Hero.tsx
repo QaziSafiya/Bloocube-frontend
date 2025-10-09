@@ -1,154 +1,250 @@
 "use client";
-import React, { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
-import Button from '@/Components/ui/Button';
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaPinterest, FaRedditAlien, FaSlack, FaWhatsapp, FaGithub, FaDiscord } from "react-icons/fa";
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useMemo } from "react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { ArrowRight, Sparkles, Users } from "lucide-react";
+import Button from "@/Components/ui/Button";
+import {
+  FaFacebookF,
+  FaTwitter,
+  FaInstagram,
+  FaLinkedinIn,
+  FaYoutube,
+  FaShoppingBag,
+  FaTiktok,
+  FaCamera,
+  FaPalette,
+  FaPinterest,
+  FaSlack,
+  FaDiscord,
+} from "react-icons/fa";
 
-const Hero: React.FC = () => {
-  // Typewriter state (must be at top-level for hooks rules)
-  const words = useMemo(() => ["workspace", "center", "OS"], []);
-  const [index, setIndex] = useState(0);
-  const [subIndex, setSubIndex] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-  
-  // Email form state
-  const [email, setEmail] = useState('');
-  const router = useRouter();
+// Constants
+const allIcons = [
+  { icon: FaCamera, mode: "creator" },
+  { icon: FaInstagram, mode: "creator" },
+  { icon: FaTiktok, mode: "creator" },
+  { icon: FaLinkedinIn, mode: "brand" },
+  { icon: FaFacebookF, mode: "brand" },
+  { icon: FaYoutube, mode: "creator" },
+  { icon: FaTwitter, mode: "creator" },
+  { icon: FaPalette, mode: "creator" },
+  { icon: FaShoppingBag, mode: "brand" },
+  { icon: FaPinterest, mode: "brand" },
+  { icon: FaDiscord, mode: "creator" },
+  { icon: FaSlack, mode: "brand" },
+];
 
-  useEffect(() => {
-    const current = words[index];
-    const atWordEnd = subIndex === current.length;
-    const atWordStart = subIndex === 0;
+const outerPositions = [
+  { top: "0%", left: "50%" },
+  { top: "15%", left: "80%" },
+  { top: "50%", left: "95%" },
+  { top: "80%", left: "80%" },
+  { top: "90%", left: "50%" },
+  { top: "90%", left: "20%" },
+  { top: "40%", left: "0%" },
+  { top: "15%", left: "20%" },
+  { top: "50%", left: "20%" },
+  { top: "50%", left: "80%" },
+  { top: "30%", left: "10%" },
+  { top: "70%", left: "90%" },
+];
 
-    const timeout = setTimeout(() => {
-      setSubIndex((prev) => prev + (deleting ? -1 : 1));
-      if (!deleting && atWordEnd) {
-        setDeleting(true);
-      } else if (deleting && atWordStart) {
-        setDeleting(false);
-        setIndex((prev) => (prev + 1) % words.length);
-      }
-    }, deleting ? 75 : 105);
-    return () => clearTimeout(timeout);
-  }, [subIndex, deleting, index, words]);
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      // Redirect to signup page with email parameter
-      router.push(`/signup?email=${encodeURIComponent(email.trim())}`);
-    }
-  };
-
-  return (
-    <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 md:pt-28 pb-20 sm:pb-28 md:pb-36">
-      {/* Minimal, tasteful icon accents (hidden on very small screens) */}
-      <div className="pointer-events-none absolute inset-0">
-        {/* Core icons - reduced on mobile for performance */}
-        <FaFacebookF className="hidden sm:block absolute top-16 left-4 sm:left-8 text-indigo-400/25 text-lg sm:text-2xl animate-drift-a" />
-        <FaYoutube className="hidden sm:block absolute top-20 right-2 sm:right-10 text-rose-400/25 text-xl sm:text-3xl animate-drift-b drift-delay-1" />
-        <FaInstagram className="hidden sm:block absolute top-28 left-1/5 sm:left-1/3 text-fuchsia-400/25 text-lg sm:text-2xl animate-drift-c drift-delay-2" />
-        <FaLinkedinIn className="hidden sm:block absolute top-36 right-1/6 sm:right-1/4 text-sky-400/25 text-lg sm:text-2xl animate-drift-a drift-delay-3" />
-        <FaTwitter className="hidden sm:block absolute top-52 left-6 sm:left-24 text-sky-300/25 text-lg sm:text-2xl animate-drift-b" />
-
-        {/* Extra subtle icons for richness - hidden on mobile for performance */}
-        <FaPinterest className="hidden md:block absolute top-[18%] left-[55%] text-rose-400/20 text-lg sm:text-2xl animate-drift-b" style={{animationDuration:'17s'}} />
-        <FaRedditAlien className="hidden md:block absolute top-[42%] left-[8%] text-orange-400/20 text-lg sm:text-2xl animate-drift-c" style={{animationDuration:'19s', animationDelay:'1.2s'}} />
-        <FaSlack className="hidden md:block absolute top-[38%] right-[12%] text-purple-300/20 text-lg sm:text-2xl animate-drift-a" style={{animationDuration:'16s', animationDelay:'0.6s'}} />
-        <FaWhatsapp className="hidden md:block absolute top-[62%] left-[18%] text-emerald-400/20 text-lg sm:text-2xl animate-drift-b" style={{animationDuration:'18s'}} />
-        <FaGithub className="hidden md:block absolute top-[8%] right-[22%] text-zinc-300/20 text-lg sm:text-2xl animate-drift-c" style={{animationDuration:'20s'}} />
-        <FaDiscord className="hidden md:block absolute top-[70%] right-[8%] text-indigo-300/20 text-lg sm:text-2xl animate-drift-a" style={{animationDuration:'22s', animationDelay:'0.8s'}} />
-      </div>
-      <div className="text-center">
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold mb-4 text-white leading-[1.12] sm:leading-[1.1] md:leading-[1.06] tracking-[-0.01em] sm:tracking-[-0.015em] md:tracking-[-0.02em] max-w-3xl sm:max-w-4xl mx-auto px-1"
-        >
-          Your <span className="text-gradient-primary">social media</span>{' '}
-          <span className="text-gradient-primary">{words[index].substring(0, subIndex)}</span>
-          <span className="ml-1 inline-block h-[1em] w-px align-middle bg-white/70 animate-caret" />
-        </motion.h1>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="mx-auto mb-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10.5px] sm:text-[11px] text-zinc-300 backdrop-blur"
-        >
-          AI-powered social media Management System
-          <span className="h-1 w-1 rounded-full bg-emerald-400/80" />
-          Monetize your content in 1 click
-        </motion.div>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-sm sm:text-[15px] md:text-base text-zinc-300/90 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-1"
-        >
-          Auto-posting, analytics, AI captions & hashtags, DM automation, competitor research
-          <br />
-          <span className="text-center block">-all in one platform</span>
-        </motion.p>
-        <motion.form
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto flex w-full max-w-md sm:max-w-xl flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 rounded-full sm:rounded-full border border-white/10 bg-white/[0.04] p-2 backdrop-blur px-2 sm:px-3"
-          onSubmit={handleEmailSubmit}
-        >
-          <input
-            type="email"
-            placeholder="Work email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 bg-transparent px-3 sm:px-4 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none w-full"
-            required
-          />
-          <Button type="submit" size="md" className="w-full sm:w-auto">
-            Start free trial
-            <ArrowRight className="inline-block ml-2 w-4 h-4" />
-          </Button>
-        </motion.form>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-3 sm:mt-4 text-[10.5px] sm:text-[11px] text-zinc-500 px-1"
-        >
-          By continuing you agree to our Terms and Privacy Policy.
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="mx-auto mt-6 sm:mt-8 flex max-w-lg sm:max-w-xl flex-wrap items-center justify-center gap-2.5 sm:gap-4 opacity-80 px-1"
-        >
-          <span className="text-[10.5px] sm:text-[11px] text-zinc-500">Trusted by teams at</span>
-          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-blue-400/50 hover:bg-blue-500/10 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:scale-105 cursor-pointer">
-            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="relative z-10">Acme Co.</span>
-          </span>
-          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-105 cursor-pointer">
-            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-emerald-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="relative z-10">Vertex Labs</span>
-          </span>
-          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-purple-400/50 hover:bg-purple-500/10 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 cursor-pointer">
-            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="relative z-10">Northstar</span>
-          </span>
-          <span className="group relative rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] sm:text-[11px] text-zinc-300 transition-all duration-300 hover:border-orange-400/50 hover:bg-orange-500/10 hover:shadow-[0_0_20px_rgba(251,146,60,0.3)] hover:scale-105 cursor-pointer">
-            <div className="absolute inset-0 rounded-md bg-gradient-to-r from-orange-500/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="relative z-10">Everline</span>
-          </span>
-        </motion.div>
-      </div>
-    </section>
-  );
+// Animation Variants
+const slideVariants: Variants = {
+  hidden: (dir: number = 1) => ({
+    opacity: 0,
+    x: dir > 0 ? 25 : -25,
+  }),
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.3, ease: "easeOut" },
+  },
+  exit: (dir: number = 1) => ({
+    opacity: 0,
+    x: dir > 0 ? -25 : 25,
+    transition: { duration: 0.25, ease: "easeIn" },
+  }),
 };
 
+const Hero = React.memo(() => {
+  const [activeMode, setActiveMode] = useState<"creator" | "brand">("creator");
+
+  // Toggle every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveMode((prev) => (prev === "creator" ? "brand" : "creator"));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const direction = activeMode === "creator" ? 1 : -1;
+
+  const colorList = useMemo(
+    () => [
+      "text-cyan-400",
+      "text-purple-400",
+      "text-pink-400",
+      "text-indigo-400",
+      "text-blue-400",
+    ],
+    []
+  );
+
+  const [isFirstRender, setIsFirstRender] = useState(true);
+
+  useEffect(() => {
+    setIsFirstRender(false);
+  }, []);
+  return (
+    <div className="min-h-screen relative overflow-hidden mt-16">
+      {/* Background Glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-72 md:w-96 h-72 md:h-96 rounded-full blur-3xl bg-cyan-500/10 animate-pulse" />
+        <div
+          className="absolute bottom-1/4 right-1/4 w-72 md:w-96 h-72 md:h-96 rounded-full blur-3xl bg-purple-500/10 animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
+      </div>
+
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-20 flex flex-col lg:flex-row items-start gap-10">
+        {/* LEFT SECTION */}
+        <div className="flex-1 text-center lg:text-left min-h-[280px]">
+          {/* Toggle Button with animation */}
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={activeMode}
+              custom={direction}
+              initial={isFirstRender ? false : { opacity: 0, y: -10 }} // first render ke liye no animation
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
+              className="flex justify-center lg:justify-start mb-6"
+            >
+              <button
+                className={`flex items-center gap-2 px-5 py-2 rounded-full border shadow-lg transition-all duration-300 hover:scale-105 ${
+                  activeMode === "creator"
+                    ? "border-cyan-400 text-cyan-400 hover:shadow-cyan-500/40"
+                    : "border-purple-400 text-purple-400 hover:shadow-purple-500/40"
+                }`}
+              >
+                {activeMode === "creator" ? (
+                  <Sparkles className="w-4 h-4" />
+                ) : (
+                  <Users className="w-4 h-4" />
+                )}
+                {activeMode === "creator" ? "Creator" : "Brand"}
+              </button>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Heading & Paragraph - No animation, immediate load */}
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 leading-snug">
+            {activeMode === "creator"
+              ? "Launch Your Next Creator Campaign in Minutes"
+              : "Redefining How Brands & Creators Grow"}
+          </h1>
+          <p className="text-zinc-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0">
+            {activeMode === "creator"
+              ? "Discover verified creators, manage payments, and measure ROI — all in one platform."
+              : "Join our exclusive private beta and experience smarter collaborations with AI technology."}
+          </p>
+
+          {/* Email Input */}
+          <form className="w-full max-w-xl mb-8 mt-8 mx-auto lg:mx-0">
+            <div className="relative w-full">
+              <input
+                type="email"
+                placeholder="Enter your work email..."
+                className="w-full rounded-xl pr-32 pl-5 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-zinc-400 bg-white/10 backdrop-blur-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 transition-all duration-300"
+              />
+              <Button
+                type="submit"
+                className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-xl px-3 py-[9px] sm:py-[10px] text-[12px] sm:text-sm md:text-base font-medium flex items-center gap-2
+             bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-500"
+              >
+                Start Free Trial
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
+
+          <p className="text-xs text-zinc-500 text-center lg:text-left mt-3">
+            By continuing you agree to our Terms and Privacy Policy.
+          </p>
+
+          {/* Brand badges */}
+          <div className="mt-10 flex flex-wrap justify-center lg:justify-start gap-3">
+            {["Acme Co.", "Vertex Labs", "Northstar", "Everline"].map(
+              (brand) => (
+                <span
+                  key={brand}
+                  className="px-4 py-2 rounded-md text-sm text-zinc-200 bg-white/5 border border-white/10 backdrop-blur-md"
+                >
+                  {brand}
+                </span>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT SECTION */}
+        <div className="flex-shrink-0 flex justify-center w-full lg:w-auto mt-10 lg:mt-0">
+          <div className="relative w-[300px] md:w-[400px] h-[300px] md:h-[400px]">
+            {/* Concentric Circles */}
+            {/* Concentric Circles */}
+            {[10, 20, 30].map((v, i) => (
+              <div
+                key={i}
+                className={`absolute rounded-full border`}
+                style={{
+                  top: `${v}%`,
+                  left: `${v}%`,
+                  right: `${v}%`,
+                  bottom: `${v}%`,
+                  borderColor: `rgba(255,255,255,${(10 + i * 10) / 100})`,
+                }}
+              />
+            ))}
+
+            {/* Center Text */}
+            <div className="absolute inset-0 flex items-center justify-center text-center">
+              <div>
+                <div className="text-3xl md:text-4xl font-bold text-white">
+                  20k+
+                </div>
+                <div className="text-sm text-zinc-400">Specialists</div>
+              </div>
+            </div>
+
+            {/* Floating Icons */}
+            {allIcons.map(({ icon: Icon, mode }, i) => {
+              const color = colorList[i % colorList.length];
+              const isActive = activeMode === mode;
+
+              return (
+                <motion.div
+                  key={i}
+                  animate={{
+                    scale: isActive ? 1.1 : 0.9,
+                    opacity: isActive ? 1 : 0.4,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute w-9 md:w-12 h-9 md:h-12 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-md"
+                  style={{
+                    ...outerPositions[i],
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <Icon className={`text-lg ${color}`} />
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+});
+
 export default Hero;
-
-
